@@ -19,7 +19,7 @@ export function SavedFiltersTab() {
 
     const loadFilters = async () => {
         setLoading(true)
-        const result = await getSavedFilters()
+        const result = await getSavedFilters() as any
         if (result.success && result.data) {
             setFilters(result.data)
         } else {
