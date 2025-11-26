@@ -29,25 +29,6 @@ export async function toggleFavorite(listingId: string, listId?: string) {
         }
     }
 
-// Create a new Favorite List
-export async function createFavoriteList(name: string) {
-        const session = await getSession();
-        if (!session) return { success: false, error: "Oturum açmanız gerekiyor." };
-
-        try {
-            const newList = await prisma.favoriteList.create({
-                data: {
-                    userId: session.id,
-                    name: name
-                }
-            });
-            revalidatePath("/dashboard/favorites");
-            return { success: true, data: newList, message: "Liste oluşturuldu." };
-        } catch (error) {
-            console.error("Create list error:", error);
-            return { success: false, error: "Liste oluşturulurken bir hata oluştu." };
-        }
-    }
 
     // Delete a Favorite List
     export async function deleteFavoriteList(listId: string) {
