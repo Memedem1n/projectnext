@@ -109,7 +109,16 @@ export async function getUserFavorites() {
                             }
                         },
                         damage: true,
-                        user: { select: { id: true, name: true, email: true } }
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                                phone: true,
+                                avatar: true,
+                                createdAt: true
+                            }
+                        }
                     }
                 }
             },
