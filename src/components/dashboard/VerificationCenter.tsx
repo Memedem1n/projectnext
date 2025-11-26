@@ -37,7 +37,7 @@ export function VerificationCenter({ user }: VerificationCenterProps) {
     const handleSendOTP = async () => {
         setLoading(true);
         setMessage(null);
-        const result = await sendPhoneOTP(user.phone || "");
+        const result = await sendPhoneOTP(user.phone || "") as any;
         if (result.success) {
             setOtpSent(true);
             setMessage({ type: "success", text: result.message || "Kod gönderildi." });
@@ -50,7 +50,7 @@ export function VerificationCenter({ user }: VerificationCenterProps) {
     const handleVerifyOTP = async () => {
         setLoading(true);
         setMessage(null);
-        const result = await verifyPhoneOTP(user.phone || "", otpCode, user.id);
+        const result = await verifyPhoneOTP(user.phone || "", otpCode, user.id) as any;
         if (result.success) {
             setMessage({ type: "success", text: result.message || "Telefon doğrulandı." });
             router.refresh();
@@ -75,7 +75,7 @@ export function VerificationCenter({ user }: VerificationCenterProps) {
         formData.append("birthYear", birthYear);
         formData.append("file", file);
 
-        const result = await uploadIdentityDocument(formData);
+        const result = await uploadIdentityDocument(formData) as any;
 
         if (result.success) {
             setMessage({ type: "success", text: result.message || "Belge yüklendi." });
