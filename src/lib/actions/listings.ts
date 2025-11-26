@@ -2,170 +2,193 @@
 
 import prisma from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-minYear ?: number
-maxYear ?: number
-minKm ?: number
-maxKm ?: number
-brand ?: string
-model ?: string
-// Legacy filters (already mapped in DB)
-fuel ?: string
-gear ?: string  // transmission
-caseType ?: string  // body type
-// New filters
-fuelType ?: string
-transmission ?: string
-driveType ?: string
-bodyType ?: string
-minHp ?: number
-maxHp ?: number
-minCc ?: number
-maxCc ?: number
-color ?: string
-condition ?: string
-exchange ?: string
-tramerRecord ?: string
-sortBy ?: 'createdAt' | 'price' | 'km' | 'year'
-sortOrder ?: 'asc' | 'desc'
-damageStatus ?: 'hasarsiz' | 'degisen' | 'boyali'
-}) {
+import { Listing, Image, Category, ListingEquipment, Equipment, DamageReport } from '@prisma/client'
+
+export type ListingWithRelations = Listing & {
+    images: Image[]
+    category: Category
+    equipment: (ListingEquipment & { equipment: Equipment })[]
+    damage: DamageReport[]
+    user: {
+        id: string
+        name: string | null
+        email: string
+        phone: string | null
+        avatar: string | null
+        createdAt: Date
+    }
+}
+
+export async function getListings(params?: {
+    categoryId?: string
+    limit?: number
+    offset?: number
+    search?: string
+    minPrice?: number
+    maxPrice?: number
+    minYear?: number
+    maxYear?: number
+    minKm?: number
+    maxKm?: number
+    brand?: string
+    model?: string
+    // Legacy filters (already mapped in DB)
+    fuel?: string
+    gear?: string  // transmission
+    caseType?: string  // body type
+    // New filters
+    fuelType?: string
+    transmission?: string
+    driveType?: string
+    bodyType?: string
+    minHp?: number
+    maxHp?: number
+    minCc?: number
+    maxCc?: number
+    color?: string
+    condition?: string
+    exchange?: string
+    tramerRecord?: string
+    sortBy?: 'createdAt' | 'price' | 'km' | 'year'
+    sortOrder?: 'asc' | 'desc'
+    damageStatus?: 'hasarsiz' | 'degisen' | 'boyali'
     try {
-        const {
-            categoryId,
-            limit = 20,
-            offset = 0,
-            search,
-            minPrice,
-            maxPrice,
-            minYear,
-            maxYear,
-            minKm,
-            maxKm,
-            brand,
-            model,
-            fuel,
-            gear,
-            caseType,
-            fuelType,
-            transmission,
-            driveType,
-            bodyType,
-            minHp,
-            maxHp,
-            minCc,
-            maxCc,
-            color,
-            condition,
-            exchange,
-            tramerRecord,
-            sortBy = 'createdAt',
-            sortOrder = 'desc',
-            damageStatus
-        } = params || {}
+    const {
+        categoryId,
+        limit = 20,
+        offset = 0,
+        search,
+        minPrice,
+        maxPrice,
+        minYear,
+        maxYear,
+        minKm,
+        maxKm,
+        brand,
+        model,
+        fuel,
+        gear,
+        caseType,
+        fuelType,
+        transmission,
+        driveType,
+        bodyType,
+        minHp,
+        maxHp,
+        minCc,
+        maxCc,
+        color,
+        condition,
+        exchange,
+        tramerRecord,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        damageStatus
+    } = params || {}
 
-        // If categoryId is provided, get all descendant category IDs for recursive filtering
-        let categoryIds: string[] | undefined;
-        if (categoryId) {
-            try {
-                categoryIds = await getAllChildCategoryIds(categoryId);
-            } catch (err) {
-                console.error('Error fetching category children:', err);
-                categoryIds = [categoryId];
-            }
-        }
-
-        const where: Prisma.ListingWhereInput = {
-            ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
-            ...(search && {
-                OR: [
-                    { title: { contains: search, mode: 'insensitive' } },
-                    { description: { contains: search, mode: 'insensitive' } },
-                    { brand: { contains: search, mode: 'insensitive' } },
-                    { model: { contains: search, mode: 'insensitive' } },
-                ]
-            }),
-            // Price & Basic Filters
-            ...(minPrice !== undefined && { price: { gte: minPrice } }),
-            ...(maxPrice !== undefined && { price: { lte: maxPrice } }),
-            ...(minYear !== undefined && { year: { gte: minYear } }),
-            ...(maxYear !== undefined && { year: { lte: maxYear } }),
-            ...(minKm !== undefined && { km: { gte: minKm } }),
-            ...(maxKm !== undefined && { km: { lte: maxKm } }),
-
-            // Brand & Model
-            ...(brand && { brand: { equals: brand, mode: 'insensitive' } }),
-            ...(model && { model: { equals: model, mode: 'insensitive' } }),
-
-            // Technical Filters (support both legacy field names and new ones)
-            ...((fuel || fuelType) && { fuel: { equals: fuel || fuelType, mode: 'insensitive' } }),
-            ...((gear || transmission) && { gear: { equals: gear || transmission, mode: 'insensitive' } }),
-            ...((caseType || bodyType) && { caseType: { equals: caseType || bodyType, mode: 'insensitive' } }),
-
-            // Color
-            ...(color && { color: { equals: color, mode: 'insensitive' } }),
-
-            // Exchange (boolean conversion)
-            ...(exchange === 'yes' && { exchange: true }),
-            ...(exchange === 'no' && { exchange: false }),
-
-            // Tramer Record (string match)
-            ...(tramerRecord && { tramer: { not: null } }),
-
-            // Damage Status
-            ...(damageStatus === 'hasarsiz' && {
-                damage: {
-                    none: {
-                        status: { in: ['Changed', 'Painted', 'Local Paint'] }
-                    }
-                }
-            }),
-            ...(damageStatus === 'degisen' && {
-                damage: {
-                    some: {
-                        status: 'Changed'
-                    }
-                }
-            }),
-            ...(damageStatus === 'boyali' && {
-                damage: {
-                    some: {
-                        status: { in: ['Painted', 'Local Paint'] }
-                    }
-                }
-            }),
-        }
-
-        // Direct Prisma call instead of cached
-        const [listings, total] = await Promise.all([
-            prisma.listing.findMany({
-                where,
-                include: {
-                    images: { orderBy: { order: 'asc' } },
-                    category: true,
-                    equipment: { include: { equipment: true } },
-                    damage: true,
-                    user: { select: { id: true, name: true, email: true } }
-                },
-                orderBy: { [sortBy]: sortOrder },
-                take: limit,
-                skip: offset,
-            }),
-            prisma.listing.count({ where })
-        ]);
-
-        return {
-            success: true,
-            data: listings,
-            total,
-            hasMore: offset + limit < total
-        }
-    } catch (error) {
-        console.error('Error fetching listings:', error)
-        return {
-            success: false,
-            error: 'Failed to fetch listings'
+    // If categoryId is provided, get all descendant category IDs for recursive filtering
+    let categoryIds: string[] | undefined;
+    if (categoryId) {
+        try {
+            categoryIds = await getAllChildCategoryIds(categoryId);
+        } catch (err) {
+            console.error('Error fetching category children:', err);
+            categoryIds = [categoryId];
         }
     }
+
+    const where: Prisma.ListingWhereInput = {
+        ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
+        ...(search && {
+            OR: [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
+                { brand: { contains: search, mode: 'insensitive' } },
+                { model: { contains: search, mode: 'insensitive' } },
+            ]
+        }),
+        // Price & Basic Filters
+        ...(minPrice !== undefined && { price: { gte: minPrice } }),
+        ...(maxPrice !== undefined && { price: { lte: maxPrice } }),
+        ...(minYear !== undefined && { year: { gte: minYear } }),
+        ...(maxYear !== undefined && { year: { lte: maxYear } }),
+        ...(minKm !== undefined && { km: { gte: minKm } }),
+        ...(maxKm !== undefined && { km: { lte: maxKm } }),
+
+        // Brand & Model
+        ...(brand && { brand: { equals: brand, mode: 'insensitive' } }),
+        ...(model && { model: { equals: model, mode: 'insensitive' } }),
+
+        // Technical Filters (support both legacy field names and new ones)
+        ...((fuel || fuelType) && { fuel: { equals: fuel || fuelType, mode: 'insensitive' } }),
+        ...((gear || transmission) && { gear: { equals: gear || transmission, mode: 'insensitive' } }),
+        ...((caseType || bodyType) && { caseType: { equals: caseType || bodyType, mode: 'insensitive' } }),
+
+        // Color
+        ...(color && { color: { equals: color, mode: 'insensitive' } }),
+
+        // Exchange (boolean conversion)
+        ...(exchange === 'yes' && { exchange: true }),
+        ...(exchange === 'no' && { exchange: false }),
+
+        // Tramer Record (string match)
+        ...(tramerRecord && { tramer: { not: null } }),
+
+        // Damage Status
+        ...(damageStatus === 'hasarsiz' && {
+            damage: {
+                none: {
+                    status: { in: ['Changed', 'Painted', 'Local Paint'] }
+                }
+            }
+        }),
+        ...(damageStatus === 'degisen' && {
+            damage: {
+                some: {
+                    status: 'Changed'
+                }
+            }
+        }),
+        ...(damageStatus === 'boyali' && {
+            damage: {
+                some: {
+                    status: { in: ['Painted', 'Local Paint'] }
+                }
+            }
+        }),
+    }
+
+    // Direct Prisma call instead of cached
+    const [listings, total] = await Promise.all([
+        prisma.listing.findMany({
+            where,
+            include: {
+                images: { orderBy: { order: 'asc' } },
+                category: true,
+                equipment: { include: { equipment: true } },
+                damage: true,
+                user: { select: { id: true, name: true, email: true } }
+            },
+            orderBy: { [sortBy]: sortOrder },
+            take: limit,
+            skip: offset,
+        }),
+        prisma.listing.count({ where })
+    ]);
+
+    return {
+        success: true,
+        data: listings,
+        total,
+        hasMore: offset + limit < total
+    }
+} catch (error) {
+    console.error('Error fetching listings:', error)
+    return {
+        success: false,
+        error: 'Failed to fetch listings'
+    }
+}
 }
 
 // Cached listing query for subcategories (e.g., Vasıta > Otomobil)
