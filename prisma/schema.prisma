@@ -1,0 +1,194 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ListingStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  EXPIRED
+  SOLD
+}
+
+// User Model
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  phone         String?
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  listings      Listing[]
+  
+  @@map("users")
+}
+
+// Category Model
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  icon        String?
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  createdAt   DateTime   @default(now())
+  
+  listings    Listing[]
+  stats       CategoryStats?
+  
+  @@map("categories")
+}
+
+// Main Listing Model
+model Listing {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  price           Int
+  
+  // Vehicle Details
+  km              Int?
+  color           String?
+  year            Int?
+  brand           String?
+  model           String?
+  fuel            String?
+  gear            String?
+  caseType        String?
+  version         String?
+  package         String?
+  
+  // Status
+  warranty        Boolean   @default(false)
+  exchange        Boolean   @default(false)
+  tramer          String?
+  
+  // Location
+  city            String?
+  district        String?
+  
+  // Metadata
+  views           Int       @default(0)
+  isPremium       Boolean   @default(false)
+  isActive        Boolean   @default(false)
+  
+  // Approval System
+  status            ListingStatus @default(PENDING)
+  rejectionReason   String?
+  approvedAt        DateTime?
+  approvedBy        String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt()
+  
+  // Relations
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  categoryId      String
+  category        Category  @relation(fields: [categoryId], references: [id])
+  
+  images          Image[]
+  equipment       ListingEquipment[]
+  damage          DamageReport[]
+  
+  @@index([userId])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@map("listings")
+}
+
+// Image Model
+model Image {
+  id          String   @id @default(cuid())
+  url         String
+  isCover     Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  @@index([listingId])
+  @@map("images")
+}
+
+// Equipment/Features Model
+model Equipment {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String   // Safety, Interior, Exterior, Multimedia
+  
+  listings    ListingEquipment[]
+  
+  @@map("equipment")
+}
+
+// Many-to-Many relation for Listing Equipment
+model ListingEquipment {
+  id          String   @id @default(cuid())
+  
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  
+  @@unique([listingId, equipmentId])
+  @@index([listingId])
+  @@index([equipmentId])
+  @@map("listing_equipment")
+}
+
+// Damage Report Model
+model DamageReport {
+  id          String   @id @default(cuid())
+  part        String   // Hood, Front Left Door, etc.
+  status      String   // Original, Local Paint, Painted, Changed
+  description String?
+  
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  @@index([listingId])
+  @@map("damage_reports")
+}
+
+// Site-wide Statistics (Singleton - only 1 row)
+model SiteStats {
+  id                  String   @id @default("singleton")
+  activeUsers         Int      @default(0)
+  totalListings       Int      @default(0)
+  newListingsToday    Int      @default(0)
+  soldToday           Int      @default(0)
+  lastUpdated         DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@map("site_stats")
+}
+
+// Category-specific Statistics (Cached)
+model CategoryStats {
+  id            String   @id @default(cuid())
+  categoryId    String   @unique
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  listingCount  Int      @default(0)
+  trend         String?  // "+12%", "-5%", etc.
+  lastUpdated   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([categoryId])
+  @@map("category_stats")
+}

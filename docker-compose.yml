@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sahibinden-web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/sahibinden?schema=public
+    depends_on:
+      - db
+    networks:
+      - sahibinden-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: sahibinden-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sahibinden
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - sahibinden-network
+
+networks:
+  sahibinden-network:
+    driver: bridge
+
+volumes:
+  db-data:
