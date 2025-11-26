@@ -20,7 +20,7 @@ export function FavoritesTab() {
         setLoading(true);
         const result = await getUserFavorites();
         if (result.success && result.data) {
-            setFavorites(result.data);
+            setFavorites(result.data.map(adaptListingToMockFormat));
         } else {
             setError(result.error || "Favoriler yüklenemedi");
         }
