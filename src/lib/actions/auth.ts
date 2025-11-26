@@ -199,49 +199,36 @@ export async function register(prevState: any, formData: FormData) {
         }
 
         // Create User
-        const user = await prisma.user.create({
-            data: {
-                name,
-                email,
-                password: hashedPassword,
-                role: role as UserRole,
-                status: status as AccountStatus,
+        storeName: storeName || name,
+            slug: (storeName || name).toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Math.floor(Math.random() * 1000),
                 phone: phone,
-                tcIdentityNo: tcIdentityNo,
-                identityVerified: isIdentityVerified,
-                identityVerifiedAt: isIdentityVerified ? new Date() : null,
-                dealerProfile: isCorporate ? {
-                    create: {
-                        storeName: storeName || name,
-                        slug: (storeName || name).toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Math.floor(Math.random() * 1000),
-                        phone: phone,
-                        city: city || "",
+                    city: city || "",
                         district: district || "",
-                        taxNumber: taxNumber || null,
-                        taxPlateDoc: documentUrl, // Store document URL
+                            taxNumber: taxNumber || null,
+                                taxPlateDoc: documentUrl, // Store document URL
                     }
                 } : undefined
             },
         });
 
-        // Send Verification Email
-        try {
-            const verificationToken = await generateVerificationToken(email);
-            await sendVerificationEmail(verificationToken.email, verificationToken.token);
-        } catch (emailError) {
-            console.error("Email sending failed:", emailError);
-        }
+// Send Verification Email
+try {
+    const verificationToken = await generateVerificationToken(email);
+    await sendVerificationEmail(verificationToken.email, verificationToken.token);
+} catch (emailError) {
+    console.error("Email sending failed:", emailError);
+}
 
-        // Redirect to verify page with email param
-        return { success: true, isCorporate, redirectUrl: `/verify-email?email=${encodeURIComponent(email)}` };
+// Redirect to verify page with email param
+return { success: true, isCorporate, redirectUrl: `/verify-email?email=${encodeURIComponent(email)}` };
 
     } catch (error) {
-        console.error("Registration error:", error);
-        return {
-            success: false,
-            error: "Kayıt sırasında bir hata oluştu.",
-        };
-    }
+    console.error("Registration error:", error);
+    return {
+        success: false,
+        error: "Kayıt sırasında bir hata oluştu.",
+    };
+}
 }
 
 export async function login(prevState: any, formData: FormData) {
