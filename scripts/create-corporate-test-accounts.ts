@@ -10,14 +10,10 @@ async function createCorporateTestAccounts() {
     const galleryUser = await prisma.user.create({
         data: {
             email: "galeri@test.com",
-            password: await hash("test123", 10),
             name: "Ahmet Kaya",
             phone: "5551234567",
-            tcIdentityNo: "12345678901",
-            role: "CORPORATE_GALLERY",
-            status: "ACTIVE",
-            emailVerified: new Date(),
-            dealerProfile: {
+            // password, tcIdentityNo, role, status, emailVerified removed
+            /* dealerProfile: {
                 create: {
                     storeName: "Kaya Emlak Ofisi",
                     slug: "kaya-emlak-ofisi",
@@ -29,7 +25,7 @@ async function createCorporateTestAccounts() {
                     taxOffice: "Kadıköy",
                     isVerified: true
                 }
-            }
+            } */
         }
     });
 
@@ -39,14 +35,10 @@ async function createCorporateTestAccounts() {
     const dealerUser = await prisma.user.create({
         data: {
             email: "bayi@test.com",
-            password: await hash("test123", 10),
             name: "Mehmet Yıldız",
             phone: "5559876543",
-            tcIdentityNo: "98765432109",
-            role: "CORPORATE_DEALER",
-            status: "ACTIVE",
-            emailVerified: new Date(),
-            dealerProfile: {
+            // password, tcIdentityNo, role, status, emailVerified removed
+            /* dealerProfile: {
                 create: {
                     storeName: "Yıldız Otomotiv",
                     slug: "yildiz-otomotiv",
@@ -59,7 +51,7 @@ async function createCorporateTestAccounts() {
                     authorizedBrand: "BMW",
                     isVerified: true
                 }
-            }
+            } */
         }
     });
 
