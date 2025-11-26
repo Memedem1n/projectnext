@@ -52,78 +52,60 @@ export async function toggleFavorite(listingId: string, listId?: string) {
 
     // Get User Favorites (Grouped or specific list)
     export async function getUserFavorites(listId?: string) {
-        const session = await getSession();
-        if (!session) return { success: false, error: "Oturum açmanız gerekiyor." };
-
-        try {
-            if (listId) {
-                // Get favorites for specific list
-                const favorites = await prisma.favorite.findMany({
-                    where: {
-                        userId: session.id,
-                        favoriteListId: listId
-                    },
-                    include: {
-                        listing: {
-                            include: {
-                                images: {
-                                    where: { isCover: true },
-                                    take: 1
-                                }
-                            }
-                        }
-                    },
-                    orderBy: { createdAt: 'desc' }
-                });
-                return { success: true, data: favorites };
-            } else {
-                // Get all favorites (including those in lists and general)
-                // Or maybe just "General" ones? 
-                // Usually "All Favorites" view shows everything.
-                // But if we want "General" tab, we filter by favoriteListId: null
-
-                // Let's return ALL for now, frontend can filter or we can add a mode.
-                const favorites = await prisma.favorite.findMany({
-                    where: { userId: session.id },
-                    include: {
-                        listing: {
-                            include: {
-                                images: {
-                                    where: { isCover: true },
-                                    take: 1
-                                }
-                            }
-                        },
-                        favoriteList: true
-                    },
-                    orderBy: { createdAt: 'desc' }
-                });
-                return { success: true, data: favorites };
-            }
-        } catch (error) {
-            console.error("Get favorites error:", error);
-            return { success: false, error: "Favoriler getirilemedi." };
-        }
     }
+}
+                    },
+orderBy: { createdAt: 'desc' }
+                });
+return { success: true, data: favorites };
+            } else {
+    // Get all favorites (including those in lists and general)
+    // Or maybe just "General" ones? 
+    // Usually "All Favorites" view shows everything.
+    // But if we want "General" tab, we filter by favoriteListId: null
 
-    // Get User's Favorite Lists
-    export async function getUserFavoriteLists() {
-        const session = await getSession();
-        if (!session) return { success: false, error: "Oturum açmanız gerekiyor." };
-
-        try {
-            const lists = await prisma.favoriteList.findMany({
-                where: { userId: session.id },
-                orderBy: { createdAt: 'desc' },
+    // Let's return ALL for now, frontend can filter or we can add a mode.
+    const favorites = await prisma.favorite.findMany({
+        where: { userId: session.id },
+        include: {
+            listing: {
                 include: {
-                    _count: {
-                        select: { favorites: true }
+                    images: {
+                        where: { isCover: true },
+                        take: 1
                     }
                 }
-            });
-            return { success: true, data: lists };
+            },
+            favoriteList: true
+        },
+        orderBy: { createdAt: 'desc' }
+    });
+    return { success: true, data: favorites };
+}
         } catch (error) {
-            console.error("Get lists error:", error);
-            return { success: false, error: "Listeler getirilemedi." };
-        }
+    console.error("Get favorites error:", error);
+    return { success: false, error: "Favoriler getirilemedi." };
+}
     }
+
+// Get User's Favorite Lists
+export async function getUserFavoriteLists() {
+    const session = await getSession();
+    if (!session) return { success: false, error: "Oturum açmanız gerekiyor." };
+
+    try {
+        const lists = await prisma.favoriteList.findMany({
+            where: { userId: session.id },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                _count: {
+                    select: { favorites: true }
+                }
+            }
+        });
+        return { success: true, data: lists };
+    } catch (error) {
+        console.error("Get lists error:", error);
+        return { success: false, error: "Listeler getirilemedi." };
+    }
+}
