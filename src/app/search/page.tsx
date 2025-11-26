@@ -17,7 +17,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     // Use real-time search
     const result = await getListings({
         search: query,
-        page,
+        offset: (page - 1) * 20,
         limit: 20,
         ...resolvedSearchParams
     });
