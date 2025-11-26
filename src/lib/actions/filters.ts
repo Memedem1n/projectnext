@@ -23,7 +23,8 @@ export async function createSavedFilter(data: SavedFilterData) {
 export async function getSavedFilters() {
     return {
         success: true,
-        data: []
+        data: [],
+        error: null
     }
 }
 
