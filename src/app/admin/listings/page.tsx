@@ -132,7 +132,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                                                 {listing.title}
                                             </div>
                                             <div className="text-xs text-gray-500 mt-1">
-                                                No: {listing.listingNo}
+                                                No: {listing.id.slice(0, 8)}
                                             </div>
                                         </td>
                                         <td className="p-4 text-brand-gold font-medium">
@@ -147,8 +147,8 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                                         </td>
                                         <td className="p-4">
                                             <span className={`px-2 py-1 text-xs rounded border ${listing.status === "ACTIVE" ? "bg-green-500/20 text-green-500 border-green-500/20" :
-                                                    listing.status === "PENDING" ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/20" :
-                                                        "bg-red-500/20 text-red-500 border-red-500/20"
+                                                listing.status === "PENDING" ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/20" :
+                                                    "bg-red-500/20 text-red-500 border-red-500/20"
                                                 }`}>
                                                 {listing.status === "ACTIVE" && "Yayında"}
                                                 {listing.status === "PENDING" && "Onay Bekliyor"}
