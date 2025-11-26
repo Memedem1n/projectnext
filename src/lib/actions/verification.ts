@@ -14,7 +14,7 @@ async function sendSMS(phone: string, message: string) {
 }
 
 export async function sendPhoneOTP(phone: string) {
-    return { success: false, error: "Telefon doğrulama özelliği şu anda bakımda." };
+    return { success: false, error: "Telefon doğrulama özelliği şu anda bakımda.", message: "" };
     /*
     try {
         const token = await generatePhoneVerificationToken(phone);
@@ -28,7 +28,7 @@ export async function sendPhoneOTP(phone: string) {
 }
 
 export async function verifyPhoneOTP(phone: string, code: string, userId: string) {
-    return { success: false, error: "Telefon doğrulama özelliği şu anda bakımda." };
+    return { success: false, error: "Telefon doğrulama özelliği şu anda bakımda.", message: "" };
     /*
     try {
         // Check if already verified
