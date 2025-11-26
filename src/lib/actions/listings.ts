@@ -3,6 +3,11 @@
 import prisma from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { Listing, Image, Category, ListingEquipment, Equipment, DamageReport } from '@prisma/client'
+import { unstable_cache } from 'next/cache'
+import { cookies } from 'next/headers'
+import { decrypt } from '@/lib/auth-edge'
+
+import { getAllChildCategoryIds } from './categories'
 
 export type ListingWithRelations = Listing & {
     images: Image[]
@@ -168,7 +173,7 @@ export async function getListings(params?: {
                     category: true,
                     equipment: { include: { equipment: true } },
                     damage: true,
-                    user: { select: { id: true, name: true, email: true } }
+                    user: { select: { id: true, name: true, email: true, phone: true, avatar: true, createdAt: true } }
                 },
                 orderBy: { [sortBy]: sortOrder },
                 take: limit,
@@ -192,8 +197,6 @@ export async function getListings(params?: {
     }
 }
 
-// Cached listing query for subcategories (e.g., Vasıta > Otomobil)
-// Revalidates every 24 hours for performance
 // Cached listing query for subcategories (e.g., Vasıta > Otomobil)
 // Revalidates every 24 hours for performance
 const getCachedSubcategoryListings = unstable_cache(
@@ -224,115 +227,41 @@ const getCachedSubcategoryListings = unstable_cache(
                         select: { url: true, id: true }
                     },
                     category: {
-                        select: { id: true, name: true, slug: true }
+                        select: { name: true, slug: true }
                     },
                     user: {
-                        select: { name: true }
+                        select: { name: true, id: true }
                     }
                 }
             }),
-            prisma.listing.count({
-                where: { categoryId: { in: categoryIds } }
-            })
+            prisma.listing.count({ where: { categoryId: { in: categoryIds } } })
         ]);
 
         return { listings, totalCount };
     },
-    ['subcategory-listings-v1'],
-    { revalidate: 86400, tags: ['listings'] } // 24 hours cache
+    ['subcategory-listings'],
+    { revalidate: 86400, tags: ['listings'] }
 );
 
-
-export async function getCachedListingsByCategory(
-    categoryId: string,
-    page: number = 1,
-    limit: number = 20
-) {
+export async function getListingsByCategory(categoryId: string, page: number = 1) {
     try {
-        const { listings, totalCount } = await getCachedSubcategoryListings(categoryId, page, limit);
+        const { listings, totalCount } = await getCachedSubcategoryListings(categoryId, page);
 
         return {
             success: true,
             data: listings,
-            pagination: {
-                page,
-                limit,
-                totalCount,
-                totalPages: Math.ceil(totalCount / limit)
-            }
-        };
+            total: totalCount,
+            page,
+            totalPages: Math.ceil(totalCount / 20)
+        }
     } catch (error) {
-        console.error('Error fetching cached listings:', error);
+        console.error('Error fetching listings by category:', error)
         return {
             success: false,
             error: 'Failed to fetch listings'
-        };
-    }
-}
-
-/**
- * Hybrid fetching strategy:
- * - If 'model' is present: Use Real-time DB (getListings)
- * - If 'model' is missing: Use Cached DB (getCachedListingsByCategory)
- * 
- * Note: For now, we'll use getListings directly for filtered queries even without model,
- * because getCachedListingsByCategory doesn't support filters yet.
- * We will only use cache for pure category navigation (no filters).
- */
-export async function getHybridListings(params: {
-    categoryId: string,
-    page?: number,
-    limit?: number,
-    [key: string]: any
-}): Promise<{
-    success: boolean;
-    data?: any[];
-    pagination?: {
-        page: number;
-        limit: number;
-        totalCount: number;
-        totalPages: number;
-    };
-    error?: string;
-}> {
-    const { categoryId, page = 1, limit = 20, ...filters } = params;
-
-    // Check if there are any active filters other than pagination
-    const hasFilters = Object.keys(filters).length > 0;
-
-    // If there are filters (brand, model, price, etc.), use real-time search
-    if (hasFilters) {
-        // Map page/limit to offset/limit for getListings
-        const result = await getListings({
-            categoryId,
-            limit,
-            offset: (page - 1) * limit,
-            ...filters
-        });
-
-        // Normalize response to match cached structure
-        if (result.success) {
-            return {
-                success: true,
-                data: result.data,
-                pagination: {
-                    page,
-                    limit,
-                    totalCount: result.total || 0,
-                    totalPages: Math.ceil((result.total || 0) / limit)
-                }
-            };
         }
-        return {
-            success: false,
-            error: result.error
-        };
     }
-
-    // If no filters (pure category view), use cache
-    return await getCachedListingsByCategory(categoryId, page, limit);
 }
-
 
 export async function getListingById(id: string) {
     try {
@@ -340,7 +269,9 @@ export async function getListingById(id: string) {
             where: { id },
             include: {
                 images: {
-                    orderBy: { order: 'asc' }
+                    orderBy: {
+                        order: 'asc'
+                    }
                 },
                 category: true,
                 equipment: {
@@ -355,6 +286,8 @@ export async function getListingById(id: string) {
                         name: true,
                         email: true,
                         phone: true,
+                        avatar: true,
+                        createdAt: true
                     }
                 }
             }
@@ -370,7 +303,11 @@ export async function getListingById(id: string) {
         // Increment view count
         await prisma.listing.update({
             where: { id },
-            data: { views: { increment: 1 } }
+            data: {
+                views: {
+                    increment: 1
+                }
+            }
         })
 
         return {
@@ -386,200 +323,78 @@ export async function getListingById(id: string) {
     }
 }
 
-export async function createListing(data: {
-    // Basic Info
-    title: string
-    description: string
-    price: number
-
-    // Category
-    categoryId: string
-
-    // Vehicle Info (optional)
-    brand?: string
-    model?: string
-    year?: number
-    km?: number
-    color?: string
-    fuel?: string
-    gear?: string
-    caseType?: string
-    version?: string
-    package?: string
-
-    // Additional
-    warranty?: boolean
-    exchange?: boolean
-    tramer?: string
-    city?: string
-    district?: string
-    neighborhood?: string
-
-    // Emlak Specific
-    sqm?: number
-    sqmGross?: number
-    rooms?: string
-    floor?: string
-    totalFloors?: number
-    heating?: string
-    buildingAge?: string
-    furnished?: boolean
-    deedStatus?: string
-    usageStatus?: string
-    monthlyDues?: number
-    creditSuitable?: boolean
-    bathroomCount?: number
-    balcony?: boolean
-    elevator?: boolean
-    parking?: boolean
-    inComplex?: boolean
-
-    // Images (URLs from Supabase Storage)
-    images?: { url: string; order: number }[]
-
-    // Equipment
-    equipmentIds?: string[]
-
-    // Damage Reports
-    damageReports?: { part: string; status: string; description?: string }[]
-}) {
+export async function createListing(data: any) {
     try {
-        // Get user ID from session
         const cookieStore = await cookies()
         const sessionCookie = cookieStore.get('session')
 
         if (!sessionCookie) {
             return {
                 success: false,
-                error: 'Unauthorized: Please log in to create a listing'
+                error: 'Unauthorized'
             }
         }
 
         const session = await decrypt(sessionCookie.value)
-        if (!session || !session.userId) {
+        const userId = session?.userId as string
+
+        if (!userId) {
             return {
                 success: false,
-                error: 'Invalid session'
+                error: 'Unauthorized'
             }
         }
 
-        const userId = session.userId as string
-
+        // Create listing with relations
         const listing = await prisma.listing.create({
             data: {
                 title: data.title,
                 description: data.description,
-                price: data.price,
+                price: parseInt(data.price),
                 categoryId: data.categoryId,
-                userId,
+                userId: userId,
+                status: 'PENDING', // Default status
+                isActive: false,   // Default active state
+
+                // Vehicle Details
                 brand: data.brand,
                 model: data.model,
-                year: data.year,
-                km: data.km,
+                year: parseInt(data.year),
+                km: parseInt(data.km),
                 color: data.color,
                 fuel: data.fuel,
                 gear: data.gear,
                 caseType: data.caseType,
-                version: data.version,
-                package: data.package,
-                warranty: data.warranty,
-                exchange: data.exchange,
-                tramer: data.tramer,
+
+                // Location
                 city: data.city,
                 district: data.district,
-                neighborhood: data.neighborhood,
 
-                // Emlak Fields
-                sqm: data.sqm,
-                sqmGross: data.sqmGross,
-                rooms: data.rooms,
-                floor: data.floor,
-                totalFloors: data.totalFloors,
-                heating: data.heating,
-                buildingAge: data.buildingAge,
-                furnished: data.furnished,
-                deedStatus: data.deedStatus,
-                usageStatus: data.usageStatus,
-                monthlyDues: data.monthlyDues,
-                creditSuitable: data.creditSuitable,
-                bathroomCount: data.bathroomCount,
-                balcony: data.balcony,
-                elevator: data.elevator,
-                parking: data.parking,
-                inComplex: data.inComplex,
-
-                // Approval System
-                status: 'PENDING',
-                isActive: false,
-
-                // Images
-                images: data.images ? {
-                    createMany: {
-                        data: data.images.map((img, index) => ({
-                            url: img.url,
-                            order: img.order ?? index,
-                            isCover: index === 0
-                        }))
-                    }
-                } : undefined,
-                equipment: data.equipmentIds ? {
-                    createMany: {
-                        data: data.equipmentIds.map(eqId => ({
-                            equipmentId: eqId
-                        }))
-                    }
-                } : undefined,
-                damage: data.damageReports ? {
-                    createMany: {
-                        data: data.damageReports
-                    }
-                } : undefined
-            },
-            include: {
-                images: true,
-                category: true,
-                equipment: {
-                    include: {
-                        equipment: true
-                    }
+                // Relations
+                images: {
+                    create: data.images.map((url: string, index: number) => ({
+                        url,
+                        order: index,
+                        isCover: index === 0
+                    }))
                 },
-                damage: true
-            }
-        })
 
-        return {
-            success: true,
-            data: listing,
-            message: '✅ İlanınız alındı! Yönetici onayından sonra 12 saat içinde yayına alınacaktır.'
-        }
-    } catch (error) {
-        console.error('Error creating listing:', error)
-        return {
-            success: false,
-            error: 'Failed to create listing'
-        }
-    }
-}
-
-export async function updateListing(id: string, data: Partial<{
-    title: string
-    description: string
-    price: number
-    isPremium: boolean
-}>) {
-    try {
-        const listing = await prisma.listing.update({
-            where: { id },
-            data,
-            include: {
-                images: true,
-                category: true,
+                // Equipment
                 equipment: {
-                    include: {
-                        equipment: true
-                    }
+                    create: data.equipment?.map((equipmentId: string) => ({
+                        equipment: {
+                            connect: { id: equipmentId }
+                        }
+                    })) || []
                 },
-                damage: true
+
+                // Damage Report
+                damage: {
+                    create: data.damage?.map((item: any) => ({
+                        part: item.part,
+                        status: item.status
+                    })) || []
+                }
             }
         })
 
@@ -588,28 +403,10 @@ export async function updateListing(id: string, data: Partial<{
             data: listing
         }
     } catch (error) {
-        console.error('Error updating listing:', error)
+        console.error('Error creating listing:', error)
         return {
             success: false,
-            error: 'Failed to update listing'
-        }
-    }
-}
-
-export async function deleteListing(id: string) {
-    try {
-        await prisma.listing.delete({
-            where: { id }
-        })
-
-        return {
-            success: true
-        }
-    } catch (error) {
-        console.error('Error deleting listing:', error)
-        return {
-            success: false,
-            error: 'Failed to delete listing'
+            error: 'Failed to create listing'
         }
     }
 }
