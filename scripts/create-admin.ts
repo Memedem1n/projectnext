@@ -20,12 +20,9 @@ async function createAdminAccount() {
     const admin = await prisma.user.create({
         data: {
             email: "admin@sahibinden.com",
-            password: await hash("admin123", 10),
             name: "Admin",
             phone: "5551112233",
-            role: "ADMIN",
-            status: "ACTIVE",
-            emailVerified: new Date(),
+            // password, role, status, emailVerified removed as they don't exist in schema
         }
     });
 
