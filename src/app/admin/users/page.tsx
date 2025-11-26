@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma'
 import { formatDate } from '@/lib/utils'
-import { User, Shield, Building2 } from 'lucide-react'
+import { User } from 'lucide-react'
 
 export const revalidate = 0
 
@@ -31,7 +31,7 @@ export default async function AdminUsersPage() {
                         <thead>
                             <tr className="bg-white/5 border-b border-white/10">
                                 <th className="p-4 text-sm font-medium text-gray-400">Kullanıcı</th>
-                                <th className="p-4 text-sm font-medium text-gray-400">Rol</th>
+                                <th className="p-4 text-sm font-medium text-gray-400">Tip</th>
                                 <th className="p-4 text-sm font-medium text-gray-400">Durum</th>
                                 <th className="p-4 text-sm font-medium text-gray-400">İlan Sayısı</th>
                                 <th className="p-4 text-sm font-medium text-gray-400">Kayıt Tarihi</th>
@@ -46,15 +46,36 @@ export default async function AdminUsersPage() {
                                                 {user.name?.charAt(0).toUpperCase() || '?'}
                                             </div>
                                             <div>
-                                                <div className="font-medium text-white">{user.name}</div>
-                                                {formatDate(user.createdAt)}
-                                            </td>
-                                        </tr>
+                                                <div className="font-medium text-white">{user.name || 'İsimsiz'}</div>
+                                                <div className="text-xs text-gray-500">{user.email}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2">
+                                            <User className="w-4 h-4 text-gray-400" />
+                                            <span className="text-sm text-gray-300 capitalize">
+                                                Standart
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                                            Aktif
+                                        </span>
+                                    </td>
+                                    <td className="p-4 text-white font-medium">
+                                        {user._count.listings}
+                                    </td>
+                                    <td className="p-4 text-gray-400 text-sm">
+                                        {formatDate(user.createdAt)}
+                                    </td>
+                                </tr>
                             ))}
-                                    </tbody>
-                                </table>
-                </div>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            )
+        </div>
+    )
 }
