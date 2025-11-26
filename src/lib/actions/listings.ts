@@ -2,65 +2,32 @@
 
 import prisma from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { unstable_cache } from 'next/cache'
-import { cookies } from 'next/headers'
-import { decrypt } from '@/lib/auth-edge'
-
-import { getAllChildCategoryIds } from './categories'
-
-export type ListingWithRelations = Prisma.ListingGetPayload<{
-    include: {
-        images: true
-        category: true
-        equipment: {
-            include: {
-                equipment: true
-            }
-        }
-        damage: true
-        user: {
-            select: {
-                id: true
-                name: true
-                email: true
-            }
-        }
-    }
-}>
-
-export async function getListings(params?: {
-    categoryId?: string
-    limit?: number
-    offset?: number
-    search?: string
-    minPrice?: number
-    maxPrice?: number
-    minYear?: number
-    maxYear?: number
-    minKm?: number
-    maxKm?: number
-    brand?: string
-    model?: string
-    // Legacy filters (already mapped in DB)
-    fuel?: string
-    gear?: string  // transmission
-    caseType?: string  // body type
-    // New filters
-    fuelType?: string
-    transmission?: string
-    driveType?: string
-    bodyType?: string
-    minHp?: number
-    maxHp?: number
-    minCc?: number
-    maxCc?: number
-    color?: string
-    condition?: string
-    exchange?: string
-    tramerRecord?: string
-    sortBy?: 'createdAt' | 'price' | 'km' | 'year'
-    sortOrder?: 'asc' | 'desc'
-    damageStatus?: 'hasarsiz' | 'degisen' | 'boyali'
+minYear ?: number
+maxYear ?: number
+minKm ?: number
+maxKm ?: number
+brand ?: string
+model ?: string
+// Legacy filters (already mapped in DB)
+fuel ?: string
+gear ?: string  // transmission
+caseType ?: string  // body type
+// New filters
+fuelType ?: string
+transmission ?: string
+driveType ?: string
+bodyType ?: string
+minHp ?: number
+maxHp ?: number
+minCc ?: number
+maxCc ?: number
+color ?: string
+condition ?: string
+exchange ?: string
+tramerRecord ?: string
+sortBy ?: 'createdAt' | 'price' | 'km' | 'year'
+sortOrder ?: 'asc' | 'desc'
+damageStatus ?: 'hasarsiz' | 'degisen' | 'boyali'
 }) {
     try {
         const {
