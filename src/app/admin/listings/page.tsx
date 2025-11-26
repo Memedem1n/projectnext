@@ -102,7 +102,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                         </thead>
                         <tbody className="divide-y divide-white/10">
                             {listings.length > 0 ? (
-                                listings.map((listing) => (
+                                listings.map((listing: any) => (
                                     <tr key={listing.id} className="hover:bg-white/5 transition-colors">
                                         <td className="p-4">
                                             <div className="relative w-16 h-12 rounded-lg overflow-hidden bg-white/5">
