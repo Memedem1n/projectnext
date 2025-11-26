@@ -1,3 +1,4 @@
+```
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -148,6 +149,32 @@ model Listing {
   updatedAt       DateTime  @updatedAt()
   
   // Relations
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  categoryId      String
+  category        Category  @relation(fields: [categoryId], references: [id])
+  
+  images          Image[]
+  equipment       ListingEquipment[]
+  damage          DamageReport[]
+  favorites       Favorite[]
+  
+  @@index([userId])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@index([price])
+  @@index([year])
+  @@index([km])
+  @@index([brand])
+  @@index([model])
+  @@index([status])
+  @@map("listings")
+}
+
+// Image Model
+model Image {
+  id          String   @id @default(cuid())
   url         String
   isCover     Boolean  @default(false)
   order       Int      @default(0)
@@ -227,3 +254,4 @@ model CategoryStats {
   @@index([categoryId])
   @@map("category_stats")
 }
+```
