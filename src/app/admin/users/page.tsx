@@ -43,7 +43,7 @@ export default async function AdminUsersPage() {
                                     <td className="p-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-bold">
-                                                {user.name.charAt(0).toUpperCase()}
+                                                {user.name?.charAt(0).toUpperCase() || '?'}
                                             </div>
                                             <div>
                                                 <div className="font-medium text-white">{user.name}</div>
@@ -67,8 +67,8 @@ export default async function AdminUsersPage() {
                                     </td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.status === 'ACTIVE'
-                                                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                                                : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                                            ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                            : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
                                             }`}>
                                             {user.status}
                                         </span>
