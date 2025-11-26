@@ -28,17 +28,10 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
     // If "all" or undefined, no status filter
 
     if (query) {
-        // Check if query is a number (for listingNo)
-        const isNumber = !isNaN(Number(query));
-
-        if (isNumber) {
-            where.listingNo = Number(query);
-        } else {
-            where.title = {
-                contains: query,
-                mode: 'insensitive'
-            };
-        }
+        where.OR = [
+            { title: { contains: query, mode: 'insensitive' } },
+            { id: { contains: query, mode: 'insensitive' } }
+        ];
     }
 
     const listings = await prisma.listing.findMany({

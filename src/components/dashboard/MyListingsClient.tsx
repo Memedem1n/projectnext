@@ -25,7 +25,7 @@ export function MyListingsClient({ listings }: MyListingsClientProps) {
         // Search filtering
         const matchesSearch =
             item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.listingNo.toString().includes(searchTerm);
+            item.id.toLowerCase().includes(searchTerm.toLowerCase());
 
         return matchesTab && matchesSearch;
     });
@@ -100,7 +100,7 @@ export function MyListingsClient({ listings }: MyListingsClientProps) {
                                     <div className="flex items-start justify-between">
                                         <h3 className="font-bold text-lg group-hover:text-primary transition-colors">
                                             {item.title}
-                                            <span className="ml-2 text-xs font-normal text-muted-foreground">#{item.listingNo}</span>
+                                            <span className="ml-2 text-xs font-normal text-muted-foreground">#{item.id.slice(0, 8)}</span>
                                         </h3>
                                         <button className="p-2 rounded-full hover:bg-white/10 text-muted-foreground">
                                             <MoreVertical className="w-5 h-5" />
