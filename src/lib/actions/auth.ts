@@ -287,7 +287,7 @@ export async function login(prevState: any, formData: FormData) {
         const session = await encrypt({
             id: user.id,
             email: user.email,
-            name: user.name,
+            name: user.name || "",
             role: user.role,
             status: user.status,
             expires
