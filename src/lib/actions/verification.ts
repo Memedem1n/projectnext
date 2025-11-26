@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { generatePhoneVerificationToken } from "@/lib/tokens";
+// import { generatePhoneVerificationToken } from "@/lib/tokens";
 
 // Mock SMS Sender
 async function sendSMS(phone: string, message: string) {
@@ -14,6 +14,8 @@ async function sendSMS(phone: string, message: string) {
 }
 
 export async function sendPhoneOTP(phone: string) {
+    return { success: false, error: "Telefon doğrulama özelliği şu anda bakımda." };
+    /*
     try {
         const token = await generatePhoneVerificationToken(phone);
         await sendSMS(phone, `Sahibinden.next doğrulama kodunuz: ${token.token}`);
@@ -22,9 +24,12 @@ export async function sendPhoneOTP(phone: string) {
         console.error("SMS sending error:", error);
         return { success: false, error: "SMS gönderilemedi." };
     }
+    */
 }
 
 export async function verifyPhoneOTP(phone: string, code: string, userId: string) {
+    return { success: false, error: "Telefon doğrulama özelliği şu anda bakımda." };
+    /*
     try {
         // Check if already verified
         const user = await prisma.user.findUnique({
@@ -36,9 +41,12 @@ export async function verifyPhoneOTP(phone: string, code: string, userId: string
             return { success: false, error: "Telefon numarası zaten doğrulanmış." };
         }
 
+        // VerificationToken model does not have 'phone' field yet.
+        // Disabling this logic until schema is updated.
+        
         const existingToken = await prisma.verificationToken.findFirst({
             where: {
-                phone,
+                // phone, // Error: phone does not exist
                 token: code
             }
         });
@@ -72,6 +80,7 @@ export async function verifyPhoneOTP(phone: string, code: string, userId: string
         console.error("Phone verification error:", error);
         return { success: false, error: "Doğrulama sırasında bir hata oluştu." };
     }
+    */
 }
 
 export async function verifySellerStatus(userId: string) {

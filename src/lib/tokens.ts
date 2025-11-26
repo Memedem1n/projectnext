@@ -30,6 +30,8 @@ export const generateVerificationToken = async (email: string) => {
 };
 
 export const generatePhoneVerificationToken = async (phone: string) => {
+    throw new Error("Phone verification is currently disabled due to schema limitations.");
+    /*
     // Generate 6 digit random code
     const token = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = new Date(new Date().getTime() + 5 * 60 * 1000); // 5 minutes expiration for SMS
@@ -56,4 +58,5 @@ export const generatePhoneVerificationToken = async (phone: string) => {
     });
 
     return verificationToken;
+    */
 };
