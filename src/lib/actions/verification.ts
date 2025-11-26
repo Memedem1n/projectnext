@@ -80,24 +80,24 @@ export async function verifySellerStatus(userId: string) {
 }
 
 export async function uploadIdentityDocument(formData: FormData) {
-    return { success: false, error: "Bu özellik şu anda aktif değil." };
+    return { success: false, error: "Bu özellik şu anda aktif değil.", message: "" };
 }
 
 export async function requestBadge(userId: string) {
-    return { success: false, error: "Bu özellik şu anda aktif değil." };
+    return { success: false, error: "Bu özellik şu anda aktif değil.", message: "" };
 }
 
 // Admin Actions
 export async function approveIdentity(verificationId: string) {
-    return { success: false, error: "Bu özellik şu anda aktif değil." };
+    return { success: false, error: "Bu özellik şu anda aktif değil.", message: "" };
 }
 
 export async function rejectIdentity(verificationId: string, reason: string) {
-    return { success: false, error: "Bu özellik şu anda aktif değil." };
+    return { success: false, error: "Bu özellik şu anda aktif değil.", message: "" };
 }
 
 export async function approveBadge(requestId: string) {
-    return { success: false, error: "Bu özellik şu anda aktif değil." };
+    return { success: false, error: "Bu özellik şu anda aktif değil.", message: "" };
 }
 
 export async function rejectBadge(requestId: string, reason: string) {
