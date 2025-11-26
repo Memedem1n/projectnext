@@ -15,7 +15,7 @@ async function main() {
             data: {
                 email: 'test@example.com',
                 name: 'Test User',
-                role: 'INDIVIDUAL',
+                // role removed as it doesn't exist in schema
             },
         });
         console.log('Created test user:', user.id);
