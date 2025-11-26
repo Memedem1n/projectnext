@@ -410,3 +410,63 @@ export async function createListing(data: any) {
         }
     }
 }
+
+export async function deleteListing(id: string) {
+    try {
+        const cookieStore = await cookies()
+        const sessionCookie = cookieStore.get('session')
+
+        if (!sessionCookie) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        const session = await decrypt(sessionCookie.value)
+        const userId = session?.userId as string
+
+        if (!userId) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        // Check if listing exists and belongs to user
+        const listing = await prisma.listing.findUnique({
+            where: { id },
+            select: { userId: true }
+        })
+
+        if (!listing) {
+            return {
+                success: false,
+                error: 'Listing not found'
+            }
+        }
+
+        // Allow admin or owner to delete
+        // For now, we only check ownership as we don't have role in session yet
+        if (listing.userId !== userId) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        await prisma.listing.delete({
+            where: { id }
+        })
+
+        return {
+            success: true
+        }
+    } catch (error) {
+        console.error('Error deleting listing:', error)
+        return {
+            success: false,
+            error: 'Failed to delete listing'
+        }
+    }
+}

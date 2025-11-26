@@ -148,25 +148,6 @@ model Listing {
   updatedAt       DateTime  @updatedAt()
   
   // Relations
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  categoryId      String
-  category        Category  @relation(fields: [categoryId], references: [id])
-  
-  images          Image[]
-  equipment       ListingEquipment[]
-  damage          DamageReport[]
-  
-  @@index([userId])
-  @@index([categoryId])
-  @@index([createdAt])
-  @@map("listings")
-}
-
-// Image Model
-model Image {
-  id          String   @id @default(cuid())
   url         String
   isCover     Boolean  @default(false)
   order       Int      @default(0)
