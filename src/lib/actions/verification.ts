@@ -73,6 +73,20 @@ export async function verifyPhoneOTP(phone: string, code: string, userId: string
         return { success: false, error: "Doğrulama sırasında bir hata oluştu." };
     }
 }
+
+export async function verifySellerStatus(userId: string) {
+    // Placeholder for seller verification logic
+    return { success: true };
+}
+
+export async function uploadIdentityDocument(formData: FormData) {
+    return { success: false, error: "Bu özellik şu anda aktif değil." };
+}
+
+export async function requestBadge(userId: string) {
+    return { success: false, error: "Bu özellik şu anda aktif değil." };
+}
+
 // Admin Actions
 export async function approveIdentity(verificationId: string) {
     return { success: false, error: "Bu özellik şu anda aktif değil." };
