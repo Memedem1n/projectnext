@@ -6,7 +6,7 @@ import { hashPassword, comparePassword } from "@/lib/password";
 import { encrypt } from "@/lib/auth-edge";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { UserRole, AccountStatus } from "@prisma/client";
+// import { UserRole, AccountStatus } from "@prisma/client";
 
 import { validateTC } from "@/lib/validators/tc-validator";
 import { verifyTCWithNVI } from "@/lib/actions/nvi-verification";
