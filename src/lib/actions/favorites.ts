@@ -30,8 +30,7 @@ export async function toggleFavorite(listingId: string, listId?: string) {
             await prisma.favorite.create({
                 data: {
                     userId: session.id,
-                    listingId: listingId,
-                    favoriteListId: listId || null
+                    listingId: listingId
                 }
             });
             revalidatePath("/dashboard/favorites");
