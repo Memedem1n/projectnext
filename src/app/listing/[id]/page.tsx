@@ -181,10 +181,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
                         </div>
 
                         <SellerCard user={listing.user} />
-                        <ExpertReportCard
-                            expertiseReport={listing.expertiseReport}
-                            isExpertiseVerified={listing.isExpertiseVerified}
-                        />
+                        {/* Expert Report Removed */}
                         <SafetyTips />
                     </div>
                 </div>
