@@ -211,7 +211,7 @@ export async function getAllChildCategoryIds(categoryId: string): Promise<string
 
     // Build adjacency list in memory
     const childrenMap = new Map<string, string[]>();
-    allCategories.forEach(cat => {
+    allCategories.forEach((cat: any) => {
         if (cat.parentId) {
             if (!childrenMap.has(cat.parentId)) {
                 childrenMap.set(cat.parentId, []);
