@@ -69,7 +69,7 @@ export function FavoritesTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {favorites.map((listing) => (
                 <div key={listing.id} className="relative">
-                    <ListingCard listing={adaptListingToMockFormat(listing)} />
+                    <ListingCard listing={adaptListingToMockFormat(listing as any)} />
                     <button
                         onClick={() => handleRemoveFavorite(listing.id)}
                         className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors z-10"
