@@ -470,3 +470,9 @@ export async function deleteListing(id: string) {
         }
     }
 }
+
+export async function getHybridListings(params: any) {
+    const { page = 1, limit = 20, ...rest } = params;
+    const offset = (page - 1) * limit;
+    return getListings({ ...rest, limit, offset });
+}
