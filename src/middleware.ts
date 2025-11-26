@@ -44,7 +44,7 @@ export async function middleware(request: NextRequest) {
         // In production, you might want to enforce this.
         // For now, we'll check if ALLOWED_ADMIN_IPS is set.
         const allowedIps = process.env.ALLOWED_ADMIN_IPS?.split(",") || [];
-        const clientIp = request.headers.get("x-forwarded-for") || request.ip;
+        const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip");
 
         if (allowedIps.length > 0 && clientIp) {
             const isAllowed = allowedIps.some(ip => clientIp.includes(ip.trim()));
