@@ -56,7 +56,7 @@ export async function getEquipmentGrouped() {
         })
 
         // Group by category
-        const grouped = equipment.reduce((acc, item) => {
+        const grouped = equipment.reduce((acc: any, item) => {
             const category = item.category || 'other'
             if (!acc[category]) {
                 acc[category] = []
