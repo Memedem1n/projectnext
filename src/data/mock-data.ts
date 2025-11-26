@@ -75,7 +75,7 @@ const TITLES: Record<string, string[]> = {
 
     // Fallbacks
     "emlak": ["Satılık Gayrimenkul", "Kiralık Gayrimenkul", "Fırsat Daire"],
-    "vasita": ["Sahibinden Temiz Araç", "Acil Satılık", "Düşük Kilometre"],
+    "vasita": ["ProjectNexx Temiz Araç", "Acil Satılık", "Düşük Kilometre"],
     "ikinci-el": ["Az Kullanılmış", "Sıfır Ayarında", "Kutulu Faturalı"],
     "default": ["Fırsat Ürünü", "Kaçırılmayacak Fiyat", "Acil Satılık", "Temiz Kullanılmış"]
 };

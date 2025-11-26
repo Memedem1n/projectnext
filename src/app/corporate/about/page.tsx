@@ -13,7 +13,7 @@ export default function AboutPage() {
                             Geleceğin İlan Platformu
                         </h1>
                         <p className="text-xl text-muted-foreground leading-relaxed">
-                            sahibindennext, Türkiye'nin en köklü ilan kültürünü modern teknolojiyle buluşturuyor.
+                            ProjectNexx, Türkiye'nin en köklü ilan kültürünü modern teknolojiyle buluşturuyor.
                             Amacımız, alıcı ve satıcıları güvenli, hızlı ve yenilikçi bir ortamda bir araya getirmek.
                         </p>
                     </div>

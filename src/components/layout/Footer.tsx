@@ -9,7 +9,7 @@ export function Footer() {
                     {/* Brand Section */}
                     <div className="space-y-4">
                         <Link href="/" className="text-2xl font-bold flex items-center gap-1">
-                            <span className="text-foreground">sahibinden</span>
+                            <span className="text-foreground">ProjectNexx</span>
                             <span className="text-brand-gold text-sm font-normal opacity-80 ml-1">next</span>
                         </Link>
                         <p className="text-muted-foreground text-sm leading-relaxed">
@@ -81,7 +81,7 @@ export function Footer() {
                         <ul className="space-y-4">
                             <li className="flex items-start gap-3 text-sm text-muted-foreground">
                                 <MapPin className="w-5 h-5 text-brand-gold shrink-0" />
-                                <span>Maslak Mah. Büyükdere Cad. No:123<br />Sarıyer / İstanbul</span>
+                                <span>İstanbul Kayaşehir Şehit Semih Balaban Caddesi<br />Başakşehir / İstanbul</span>
                             </li>
                             <li className="flex items-center gap-3 text-sm text-muted-foreground">
                                 <Phone className="w-5 h-5 text-brand-gold shrink-0" />
@@ -89,7 +89,7 @@ export function Footer() {
                             </li>
                             <li className="flex items-center gap-3 text-sm text-muted-foreground">
                                 <Mail className="w-5 h-5 text-brand-gold shrink-0" />
-                                <span>barutcumehmetemin34@gmail.com</span>
+                                <span>iletisim@projectnexx.com</span>
                             </li>
                         </ul>
                     </div>
@@ -98,7 +98,7 @@ export function Footer() {
                 {/* Bottom Bar */}
                 <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-xs text-muted-foreground text-center md:text-left">
-                        &copy; {new Date().getFullYear()} sahibinden<span className="opacity-70">next</span>. Tüm hakları saklıdır.
+                        &copy; {new Date().getFullYear()} ProjectNexx. Tüm hakları saklıdır.
                     </p>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <span>Made with</span>

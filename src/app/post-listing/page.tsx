@@ -224,7 +224,7 @@ export default function PostListingPage() {
                                 "w-full bg-black/20 border rounded-xl p-4 focus:ring-0 transition-colors",
                                 errors.title ? "border-red-500 focus:border-red-500" : "border-white/10 focus:border-brand-gold"
                             )}
-                            placeholder="Örn: Sahibinden Temiz 2020 Model BMW 320i"
+                            placeholder="Örn: ProjectNexx Temiz 2020 Model BMW 320i"
                             value={formData.title}
                             onChange={e => {
                                 setFormData({ ...formData, title: e.target.value });

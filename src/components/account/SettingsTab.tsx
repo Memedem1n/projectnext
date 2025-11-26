@@ -8,7 +8,8 @@ import { cn } from "@/lib/utils"
 export function SettingsTab() {
     const [formData, setFormData] = useState({
         name: "",
-        phone: ""
+        phone: "",
+        twoFactorEnabled: false
     })
     const [loading, setLoading] = useState(false)
     const [success, setSuccess] = useState(false)
@@ -100,6 +101,27 @@ export function SettingsTab() {
 
             {/* Password Change Section */}
             <div className="glass-card p-8 mt-6">
+                <h2 className="text-xl font-bold mb-4">Güvenlik Ayarları</h2>
+
+                {/* 2FA Toggle */}
+                <div className="flex items-center justify-between mb-6 pb-6 border-b border-white/10">
+                    <div>
+                        <h3 className="font-medium mb-1">İki Adımlı Doğrulama (2FA)</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Giriş yaparken email adresinize doğrulama kodu gönderilir.
+                        </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={formData.twoFactorEnabled}
+                            onChange={(e) => setFormData({ ...formData, twoFactorEnabled: e.target.checked })}
+                        />
+                        <div className="w-11 h-6 bg-white/10 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-gold/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-gold"></div>
+                    </label>
+                </div>
+
                 <h2 className="text-xl font-bold mb-4">Şifre Değiştir</h2>
                 <p className="text-muted-foreground mb-4">
                     Şifrenizi değiştirmek için lütfen destek ekibi ile iletişime geçin.

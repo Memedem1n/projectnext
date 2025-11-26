@@ -37,7 +37,7 @@ export function SellerCard({ user }: SellerCardProps) {
                     <User className="w-6 h-6" />
                 </div>
                 <div>
-                    <h3 className="font-semibold text-lg">{user.name || "Sahibinden Kullanıcısı"}</h3>
+                    <h3 className="font-semibold text-lg">{user.name || "ProjectNexx Kullanıcısı"}</h3>
                     {/* Show only highest priority badge */}
                     {isCorporate ? (
                         <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-blue-600/10 border border-blue-500/20 rounded-md w-fit">

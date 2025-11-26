@@ -30,26 +30,24 @@ export const generateVerificationToken = async (email: string) => {
 };
 
 export const generatePhoneVerificationToken = async (phone: string) => {
-    throw new Error("Phone verification is currently disabled due to schema limitations.");
-    /*
     // Generate 6 digit random code
     const token = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = new Date(new Date().getTime() + 5 * 60 * 1000); // 5 minutes expiration for SMS
 
     // Check if a token already exists for this phone
-    const existingToken = await prisma.verificationToken.findFirst({
+    const existingToken = await prisma.phoneVerificationToken.findFirst({
         where: { phone }
     });
 
     if (existingToken) {
-        await prisma.verificationToken.delete({
+        await prisma.phoneVerificationToken.delete({
             where: {
                 id: existingToken.id
             }
         });
     }
 
-    const verificationToken = await prisma.verificationToken.create({
+    const verificationToken = await prisma.phoneVerificationToken.create({
         data: {
             phone,
             token,
@@ -58,5 +56,4 @@ export const generatePhoneVerificationToken = async (phone: string) => {
     });
 
     return verificationToken;
-    */
 };

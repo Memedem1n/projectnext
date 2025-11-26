@@ -18,7 +18,7 @@ export async function sendPhoneOTP(phone: string) {
     /*
     try {
         const token = await generatePhoneVerificationToken(phone);
-        await sendSMS(phone, `Sahibinden.next doğrulama kodunuz: ${token.token}`);
+        await sendSMS(phone, `ProjectNexx doğrulama kodunuz: ${token.token}`);
         return { success: true, message: "Doğrulama kodu gönderildi." };
     } catch (error) {
         console.error("SMS sending error:", error);

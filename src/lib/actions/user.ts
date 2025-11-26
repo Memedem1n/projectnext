@@ -206,6 +206,7 @@ export async function isListingFavorited(listingId: string) {
 export async function updateUserProfile(data: {
     name?: string
     phone?: string
+    twoFactorEnabled?: boolean
 }) {
     try {
         const auth = await getCurrentUserId()
@@ -217,13 +218,15 @@ export async function updateUserProfile(data: {
             where: { id: auth.userId },
             data: {
                 ...(data.name && { name: data.name }),
-                ...(data.phone && { phone: data.phone })
+                ...(data.phone && { phone: data.phone }),
+                ...(data.twoFactorEnabled !== undefined && { twoFactorEnabled: data.twoFactorEnabled })
             },
             select: {
                 id: true,
                 name: true,
                 email: true,
-                phone: true
+                phone: true,
+                twoFactorEnabled: true
             }
         })
 

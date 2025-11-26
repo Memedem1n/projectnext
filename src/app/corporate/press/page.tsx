@@ -7,7 +7,7 @@ export default function PressPage() {
             <section className="py-20 container mx-auto px-4">
                 <h1 className="text-4xl font-bold mb-4">Basın Odası</h1>
                 <p className="text-xl text-muted-foreground mb-12">
-                    sahibindennext ile ilgili en güncel haberler, basın bültenleri ve medya materyalleri.
+                    ProjectNexx ile ilgili en güncel haberler, basın bültenleri ve medya materyalleri.
                 </p>
 
                 <div className="grid lg:grid-cols-3 gap-12">
@@ -15,7 +15,7 @@ export default function PressPage() {
                     <div className="lg:col-span-2 space-y-8">
                         <h2 className="text-2xl font-bold mb-6">Son Haberler</h2>
                         {[
-                            { date: "20 Kasım 2025", title: "sahibindennext 10 Milyon Kullanıcıya Ulaştı", desc: "Türkiye'nin en hızlı büyüyen ilan platformu yeni bir rekora imza attı." },
+                            { date: "20 Kasım 2025", title: "ProjectNexx 10 Milyon Kullanıcıya Ulaştı", desc: "Türkiye'nin en hızlı büyüyen ilan platformu yeni bir rekora imza attı." },
                             { date: "15 Ekim 2025", title: "Yapay Zeka Destekli Ekspertiz Hizmeti Başladı", desc: "Artık araç alım satımlarında yapay zeka destekli ön ekspertiz raporu saniyeler içinde hazır." },
                             { date: "1 Eylül 2025", title: "Sürdürülebilirlik Raporu 2025 Yayınlandı", desc: "Karbon ayak izimizi %40 azalttık. Yeşil ofis sertifikamızı aldık." },
                         ].map((news, i) => (
@@ -60,8 +60,8 @@ export default function PressPage() {
                             <p className="text-sm text-muted-foreground mb-4">
                                 Röportaj talepleri ve basın sorularınız için:
                             </p>
-                            <a href="mailto:basin@sahibindennext.com" className="text-primary font-bold hover:underline">
-                                basin@sahibindennext.com
+                            <a href="mailto:basin@projectnexx.com" className="text-primary font-bold hover:underline">
+                                basin@projectnexx.com
                             </a>
                         </div>
                     </div>

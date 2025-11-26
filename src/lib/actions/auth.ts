@@ -278,6 +278,13 @@ export async function login(prevState: any, formData: FormData) {
             };
         }
 
+        // Check 2FA
+        if (user.twoFactorEnabled) {
+            const verificationToken = await generateVerificationToken(user.email);
+            await sendVerificationEmail(verificationToken.email, verificationToken.token);
+            return { success: true, requires2FA: true, email: user.email };
+        }
+
         // Create Session
         // Standard: 24 hours, Remember Me: 30 days
         const sessionDuration = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
@@ -308,4 +315,55 @@ export async function login(prevState: any, formData: FormData) {
 export async function logout() {
     (await cookies()).set("session", "", { expires: new Date(0) });
     redirect("/login");
+}
+
+export async function verifyLogin2FA(email: string, code: string) {
+    try {
+        const existingToken = await prisma.verificationToken.findFirst({
+            where: {
+                email,
+                token: code
+            }
+        });
+
+        if (!existingToken) {
+            return { success: false, error: "Geçersiz veya süresi dolmuş kod." };
+        }
+
+        const hasExpired = new Date(existingToken.expires) < new Date();
+        if (hasExpired) {
+            return { success: false, error: "Kodun süresi dolmuş." };
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (!user) {
+            return { success: false, error: "Kullanıcı bulunamadı." };
+        }
+
+        await prisma.verificationToken.delete({
+            where: { id: existingToken.id }
+        });
+
+        // Create Session
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        const session = await encrypt({
+            id: user.id,
+            email: user.email,
+            name: user.name || "",
+            role: user.role,
+            status: user.status,
+            expires
+        });
+
+        (await cookies()).set("session", session, { expires, httpOnly: true });
+
+        return { success: true };
+
+    } catch (error) {
+        console.error("2FA Verification Error:", error);
+        return { success: false, error: "Doğrulama sırasında bir hata oluştu." };
+    }
 }

@@ -8,10 +8,13 @@ services:
     container_name: sahibinden-web
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/sahibinden?schema=public
+      - DIRECT_URL=postgresql://postgres:postgres@db:5432/sahibinden?schema=public
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     depends_on:
       - db
     networks:

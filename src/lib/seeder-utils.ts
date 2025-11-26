@@ -73,7 +73,7 @@ export function getRandomVehicleData() {
 }
 
 export function generateListingTitle(categoryName: string, data: any) {
-    const adjectives = ["Sahibinden", "Temiz", "Acil", "Fırsat", "Kelepir", "Yatırımlık", "Masrafsız"];
+    const adjectives = ["ProjectNexx", "Temiz", "Acil", "Fırsat", "Kelepir", "Yatırımlık", "Masrafsız"];
     const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
 
     if (data.brand) {

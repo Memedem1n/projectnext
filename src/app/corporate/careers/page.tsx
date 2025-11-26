@@ -12,7 +12,7 @@ export default function CareersPage() {
                         Geleceği <span className="text-primary">Birlikte</span> İnşa Edelim
                     </h1>
                     <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-                        sahibindennext ekibine katılın, milyonlarca kullanıcının hayatına dokunan teknolojiler geliştirin.
+                        ProjectNexx ekibine katılın, milyonlarca kullanıcının hayatına dokunan teknolojiler geliştirin.
                     </p>
                     <button className="bg-primary text-primary-foreground px-8 py-4 rounded-full font-bold text-lg hover:bg-primary/90 transition-transform hover:scale-105">
                         Açık Pozisyonları Gör
@@ -23,7 +23,7 @@ export default function CareersPage() {
             {/* Perks */}
             <section className="py-20">
                 <div className="container mx-auto px-4">
-                    <h2 className="text-3xl font-bold text-center mb-16">Neden sahibindennext?</h2>
+                    <h2 className="text-3xl font-bold text-center mb-16">Neden ProjectNexx?</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {[
                             { icon: Laptop, title: "Hibrit Çalışma", desc: "Ofis veya ev, nerede üretkensen orada çalış." },

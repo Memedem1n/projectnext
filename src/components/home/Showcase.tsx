@@ -32,7 +32,7 @@ const listings = [
     },
     {
         id: 4,
-        title: "Sahibinden Temiz iPhone 15 Pro Max",
+        title: "ProjectNexx Temiz iPhone 15 Pro Max",
         price: "85.000 TL",
         location: "İzmir, Karşıyaka",
         image: "https://images.unsplash.com/photo-1696446701796-da61225697cc?auto=format&fit=crop&w=800&q=80",

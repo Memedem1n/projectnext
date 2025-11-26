@@ -34,10 +34,97 @@ function SubmitButton() {
 
 export default function LoginPage() {
     const [state, formAction] = useFormState(login, null);
+    const [otpCode, setOtpCode] = useState("");
+    const [otpError, setOtpError] = useState("");
+    const [otpLoading, setOtpLoading] = useState(false);
     const router = useRouter();
 
-    if (state?.success) {
+    // Handle 2FA Verification
+    const handleVerify2FA = async () => {
+        if (!state?.email || !otpCode) return;
+
+        setOtpLoading(true);
+        setOtpError("");
+
+        try {
+            const { verifyLogin2FA } = await import("@/lib/actions/auth");
+            const result = await verifyLogin2FA(state.email, otpCode);
+
+            if (result.success) {
+                router.push("/dashboard");
+            } else {
+                setOtpError(result.error || "Doğrulama başarısız.");
+            }
+        } catch (error) {
+            setOtpError("Bir hata oluştu.");
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
+    if (state?.success && !state.requires2FA) {
         router.push("/dashboard");
+    }
+
+    // 2FA Form
+    if (state?.requires2FA) {
+        return (
+            <div className="min-h-screen flex flex-col">
+                <PageBackground />
+                <main className="flex-1 flex items-center justify-center px-4 py-12">
+                    <div className="w-full max-w-md space-y-8">
+                        <div className="text-center space-y-2">
+                            <h1 className="text-3xl font-bold tracking-tight">Güvenlik Doğrulaması</h1>
+                            <p className="text-muted-foreground">
+                                Lütfen email adresinize ({state.email}) gönderilen doğrulama kodunu giriniz.
+                            </p>
+                        </div>
+
+                        <div className="glass-card p-8 border-white/10 bg-black/40 backdrop-blur-xl space-y-6">
+                            {otpError && (
+                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-500 text-sm">
+                                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                    <p>{otpError}</p>
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-muted-foreground ml-1">Doğrulama Kodu</label>
+                                <div className="relative group">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                    <input
+                                        type="text"
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value)}
+                                        placeholder="123456"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all text-center tracking-widest text-xl font-mono"
+                                        maxLength={6}
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleVerify2FA}
+                                disabled={otpLoading || otpCode.length < 6}
+                                className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold text-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {otpLoading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Doğrulanıyor...
+                                    </>
+                                ) : (
+                                    <>
+                                        Doğrula ve Giriş Yap
+                                        <ArrowRight className="w-5 h-5" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
     }
 
     return (

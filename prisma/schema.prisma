@@ -35,6 +35,7 @@ model User {
   tcIdentityNo  String?
   identityVerified Boolean @default(false)
   identityVerifiedAt DateTime?
+  twoFactorEnabled Boolean @default(false)
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -55,6 +56,17 @@ model VerificationToken {
 
   @@unique([email, token])
   @@map("verification_tokens")
+}
+
+model PhoneVerificationToken {
+  id        String   @id @default(cuid())
+  phone     String
+  token     String
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([phone, token])
+  @@map("phone_verification_tokens")
 }
 
 model Favorite {

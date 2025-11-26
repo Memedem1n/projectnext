@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const listing = result.data;
 
     return {
-        title: `${listing.title} - Sahibinden.next`,
+        title: `${listing.title} - ProjectNexx`,
         description: listing.description?.substring(0, 160) || "İlan detayları",
     };
 }

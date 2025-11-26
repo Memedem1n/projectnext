@@ -7,7 +7,7 @@ export default function HowToPage() {
             <section className="py-20 text-center container mx-auto px-4">
                 <h1 className="text-4xl md:text-6xl font-bold mb-6">Nasıl Çalışır?</h1>
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                    sahibindennext ile ilan vermek de alışveriş yapmak da çok kolay. İşte adım adım rehberiniz.
+                    ProjectNexx ile ilan vermek de alışveriş yapmak da çok kolay. İşte adım adım rehberiniz.
                 </p>
             </section>
 

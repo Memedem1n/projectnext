@@ -20,7 +20,7 @@ export async function Navbar() {
                         <Menu className="w-5 h-5" />
                     </button>
                     <Link href="/" className="text-xl md:text-2xl font-bold flex items-center gap-1 group">
-                        <span className="text-brand-gold drop-shadow-[0_0_8px_rgba(254,204,128,0.3)] group-hover:drop-shadow-[0_0_12px_rgba(254,204,128,0.5)] transition-all">sahibinden</span>
+                        <span className="text-brand-gold drop-shadow-[0_0_8px_rgba(254,204,128,0.3)] group-hover:drop-shadow-[0_0_12px_rgba(254,204,128,0.5)] transition-all">ProjectNexx</span>
                         <span className="text-brand-gold/60 text-sm font-normal ml-1">next</span>
                     </Link>
                 </div>
