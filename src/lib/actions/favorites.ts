@@ -26,6 +26,15 @@ export async function toggleFavorite(listingId: string, listId?: string) {
             revalidatePath("/dashboard/favorites");
             return { success: true, action: "removed", message: "Favorilerden kaldırıldı." };
         } else {
+            // Add
+            await prisma.favorite.create({
+                data: {
+                    userId: session.id,
+                    listingId: listingId
+                }
+            });
+            revalidatePath("/dashboard/favorites");
+            return { success: true, action: "added", message: "Favorilere eklendi." };
         }
     }
 
