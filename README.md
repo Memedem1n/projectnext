@@ -213,3 +213,6 @@ Private project
 ## 👥 Geliştirici
 
 Next.js 16 | React 19 | TypeScript | Prisma | Supabase
+
+_Last Deployment Trigger: Manual Retry via README update_
+
