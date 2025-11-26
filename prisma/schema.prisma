@@ -26,12 +26,66 @@ model User {
   name          String?
   phone         String?
   avatar        String?
+  password      String?
+  role          String?   @default("INDIVIDUAL")
+  status        String?   @default("ACTIVE")
+  emailVerified DateTime?
+  phoneVerified Boolean   @default(false)
+  phoneVerifiedAt DateTime?
+  tcIdentityNo  String?
+  identityVerified Boolean @default(false)
+  identityVerifiedAt DateTime?
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
   listings      Listing[]
+  favorites     Favorite[]
+  dealerProfile DealerProfile?
   
   @@map("users")
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+  @@map("verification_tokens")
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+  @@map("favorites")
+}
+
+model DealerProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeName   String
+  slug        String   @unique
+  phone       String
+  city        String
+  district    String
+  taxNumber   String?
+  taxPlateDoc String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("dealer_profiles")
 }
 
 // Category Model
