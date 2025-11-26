@@ -14,8 +14,7 @@ export async function toggleFavorite(listingId: string, listId?: string) {
         const existingFavorite = await prisma.favorite.findFirst({
             where: {
                 userId: session.id,
-                listingId: listingId,
-                favoriteListId: listId || null
+                listingId: listingId
             }
         });
 
