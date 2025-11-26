@@ -1,10 +1,15 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-const domain = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
-
 export const sendVerificationEmail = async (email: string, token: string) => {
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey) {
+        console.warn("RESEND_API_KEY is missing. Email sending skipped.");
+        return;
+    }
+
+    const resend = new Resend(apiKey);
+
     await resend.emails.send({
         from: "onboarding@resend.dev",
         to: email,
