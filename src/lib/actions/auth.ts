@@ -6,7 +6,6 @@ import { hashPassword, comparePassword } from "@/lib/password";
 import { encrypt } from "@/lib/auth-edge";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-// import { UserRole, AccountStatus } from "@prisma/client";
 
 import { validateTC } from "@/lib/validators/tc-validator";
 import { verifyTCWithNVI } from "@/lib/actions/nvi-verification";
@@ -80,7 +79,7 @@ export async function verifyEmailOTP(email: string, code: string) {
         const session = await encrypt({
             id: existingUser.id,
             email: existingUser.email,
-            name: existingUser.name,
+            name: existingUser.name || "",
             role: existingUser.role,
             status: "ACTIVE",
             expires
@@ -199,36 +198,49 @@ export async function register(prevState: any, formData: FormData) {
         }
 
         // Create User
-        storeName: storeName || name,
-            slug: (storeName || name).toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Math.floor(Math.random() * 1000),
+        const user = await prisma.user.create({
+            data: {
+                name,
+                email,
+                password: hashedPassword,
+                role: role,
+                status: status,
                 phone: phone,
-                    city: city || "",
+                tcIdentityNo: tcIdentityNo,
+                identityVerified: isIdentityVerified,
+                identityVerifiedAt: isIdentityVerified ? new Date() : null,
+                dealerProfile: isCorporate ? {
+                    create: {
+                        storeName: storeName || name,
+                        slug: (storeName || name).toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Math.floor(Math.random() * 1000),
+                        phone: phone,
+                        city: city || "",
                         district: district || "",
-                            taxNumber: taxNumber || null,
-                                taxPlateDoc: documentUrl, // Store document URL
+                        taxNumber: taxNumber || null,
+                        taxPlateDoc: documentUrl, // Store document URL
                     }
                 } : undefined
             },
         });
 
-// Send Verification Email
-try {
-    const verificationToken = await generateVerificationToken(email);
-    await sendVerificationEmail(verificationToken.email, verificationToken.token);
-} catch (emailError) {
-    console.error("Email sending failed:", emailError);
-}
+        // Send Verification Email
+        try {
+            const verificationToken = await generateVerificationToken(email);
+            await sendVerificationEmail(verificationToken.email, verificationToken.token);
+        } catch (emailError) {
+            console.error("Email sending failed:", emailError);
+        }
 
-// Redirect to verify page with email param
-return { success: true, isCorporate, redirectUrl: `/verify-email?email=${encodeURIComponent(email)}` };
+        // Redirect to verify page with email param
+        return { success: true, isCorporate, redirectUrl: `/verify-email?email=${encodeURIComponent(email)}` };
 
     } catch (error) {
-    console.error("Registration error:", error);
-    return {
-        success: false,
-        error: "Kayıt sırasında bir hata oluştu.",
-    };
-}
+        console.error("Registration error:", error);
+        return {
+            success: false,
+            error: "Kayıt sırasında bir hata oluştu.",
+        };
+    }
 }
 
 export async function login(prevState: any, formData: FormData) {
