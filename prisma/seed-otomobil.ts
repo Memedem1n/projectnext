@@ -62,8 +62,7 @@ async function main() {
             data: {
                 email: 'test@sahibinden.com',
                 name: 'Test Kullanıcı',
-                password: 'test123'
-                // role defaults to USER
+                // password field removed as it doesn't exist in schema
             }
         });
     }
@@ -109,6 +108,8 @@ async function main() {
                         exchange: exchange,
                         city: city,
                         district: district,
+                        status: 'ACTIVE', // Approval system
+                        isActive: true,   // Approval system
                         images: {
                             create: [
                                 {
