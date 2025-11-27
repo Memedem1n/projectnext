@@ -44,13 +44,31 @@ export async function middleware(request: NextRequest) {
         // In production, you might want to enforce this.
         // For now, we'll check if ALLOWED_ADMIN_IPS is set.
         const allowedIps = process.env.ALLOWED_ADMIN_IPS?.split(",") || [];
+        // Add localhost IPs automatically
+        const localhostIps = ["127.0.0.1", "::1", "localhost"];
+        const allAllowedIps = [...allowedIps, ...localhostIps];
         const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip");
 
         if (allowedIps.length > 0 && clientIp) {
-            const isAllowed = allowedIps.some(ip => clientIp.includes(ip.trim()));
+            const isAllowed = allAllowedIps.some(ip => clientIp.includes(ip.trim()));
             if (!isAllowed) {
                 return new NextResponse("Access Denied: VPN Required", { status: 403 });
             }
+        }
+
+        // AUTHENTICATION CHECK - require admin_session cookie
+        // Allow /login page to bypass auth check
+        if (path !== "/login" && !path.startsWith("/login?")) {
+            const adminSession = request.cookies.get("admin_session");
+            if (!adminSession) {
+                return NextResponse.redirect(new URL("/login", request.url));
+            }
+        }
+
+        // STATIC FILE ACCESS
+        // Don't rewrite for secure uploads, serve them directly from public folder
+        if (path.startsWith("/secure-uploads")) {
+            return NextResponse.next();
         }
 
         // Rewrite the URL to the /admin folder

@@ -15,6 +15,8 @@ enum ListingStatus {
   PENDING
   ACTIVE
   REJECTED
+  PASSIVE
+  DELETED
   EXPIRED
   SOLD
 }
@@ -33,6 +35,7 @@ model User {
   phoneVerified Boolean   @default(false)
   phoneVerifiedAt DateTime?
   tcIdentityNo  String?
+  identityDoc   String?   // URL to identity document
   identityVerified Boolean @default(false)
   identityVerifiedAt DateTime?
   twoFactorEnabled Boolean @default(false)
@@ -43,6 +46,7 @@ model User {
   listings      Listing[]
   favorites     Favorite[]
   dealerProfile DealerProfile?
+  vehicleFeedbacks VehicleFeedback[]
   
   @@map("users")
 }
@@ -120,6 +124,7 @@ model Category {
 // Main Listing Model
 model Listing {
   id              String    @id @default(cuid())
+  listingNumber   Int       @unique @default(autoincrement())
   title           String
   description     String?
   price           Int
@@ -155,6 +160,11 @@ model Listing {
   rejectionReason   String?
   approvedAt        DateTime?
   approvedBy        String?
+  deletedAt         DateTime?  // For soft delete
+  
+  // New Fields
+  expertReports     String[]   // URLs to expert report files (PDF/Image)
+  contactPreference String     @default("both") // "call", "message", "both"
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt()
@@ -264,4 +274,50 @@ model CategoryStats {
   
   @@index([categoryId])
   @@map("category_stats")
+}
+
+// Eurotax Vehicle Data (Flat table for efficient filtering)
+model VehicleData {
+  id          String   @id @default(cuid())
+  type        String   // Otomobil, Motosiklet vs. (path_1)
+  year        Int      // 2025, 2024 (path_2)
+  brand       String   // Audi, BMW (path_3)
+  model       String   // A3, 3 Serisi (path_4)
+  fuel        String?  // Benzin, Dizel (path_5)
+  bodyType    String?  // Sedan, Hatchback (path_6 - Kasa Tipi)
+  gear        String?  // Otomatik, Manuel (path_7)
+  subModel    String?  // A3 Sedan, 320i (path_8)
+  package     String?  // S Line, M Sport (path_9)
+  
+  // Technical Specs
+  motorVolume String?  // 1598 cm3
+  motorPower  String?  // 130 HP
+  version     String?  // Alt Model (DB11 5.2 V12 AMR)
+  
+  createdAt   DateTime @default(now())
+  
+  @@map("vehicle_data")
+  @@index([type])
+  @@index([brand])
+  @@index([model])
+  @@index([year])
+}
+
+// Vehicle Feedback System
+model VehicleFeedback {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  type        String   // "ERROR_REPORT" | "MISSING_VEHICLE"
+  brand       String?
+  model       String?
+  year        Int?
+  details     String   @db.Text
+  
+  status      String   @default("PENDING") // "PENDING", "RESOLVED", "REJECTED"
+  adminNote   String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

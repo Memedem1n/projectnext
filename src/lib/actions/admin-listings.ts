@@ -12,7 +12,6 @@ export async function approveListing(listingId: string) {
                 status: "ACTIVE",
                 isActive: true,
                 approvedAt: new Date(),
-                // approvedBy can be added when admin auth is implemented
             }
         });
 
@@ -44,5 +43,24 @@ export async function rejectListing(listingId: string, reason: string) {
     } catch (error) {
         console.error("Listing rejection error:", error);
         return { success: false, error: "İlan reddedilirken bir hata oluştu." };
+    }
+}
+
+// Soft Delete Listing (Admin)
+export async function softDeleteListing(listingId: string) {
+    try {
+        await prisma.listing.update({
+            where: { id: listingId },
+            data: {
+                status: "DELETED",
+                isActive: false,
+                deletedAt: new Date()
+            }
+        })
+        revalidatePath('/admin/listings')
+        return { success: true }
+    } catch (error) {
+        console.error('Soft delete listing error:', error)
+        return { success: false, error: 'İlan silinirken bir hata oluştu' }
     }
 }

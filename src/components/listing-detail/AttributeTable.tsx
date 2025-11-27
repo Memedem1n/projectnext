@@ -14,7 +14,7 @@ export function AttributeTable({ listing }: AttributeTableProps) {
     // Define attributes to display based on category
     const attributes = isEmlak ? [
         // Emlak-specific attributes
-        { label: "İlan No", value: listing.id.substring(0, 8).toUpperCase() },
+        { label: "İlan No", value: listing.listingNumber?.toString() || listing.id.substring(0, 8).toUpperCase() },
         { label: "İlan Tarihi", value: new Date(listing.createdAt).toLocaleDateString('tr-TR') },
         { label: "Emlak Tipi", value: listing.propertyType || "Daire" }, // Default to Daire
         { label: "m² (Brüt)", value: listing.squareMeters ? `${listing.squareMeters} m²` : "150 m²" },
@@ -34,7 +34,7 @@ export function AttributeTable({ listing }: AttributeTableProps) {
         { label: "Aidat", value: listing.dues ? `${listing.dues} TL` : "500 TL" },
     ] : [
         // Vehicle-specific attributes
-        { label: "İlan No", value: listing.id.substring(0, 8).toUpperCase() },
+        { label: "İlan No", value: listing.listingNumber?.toString() || listing.id.substring(0, 8).toUpperCase() },
         { label: "İlan Tarihi", value: new Date(listing.createdAt).toLocaleDateString('tr-TR') },
         { label: "Marka", value: listing.brand },
         { label: "Seri", value: listing.model }, // Assuming model is series for now

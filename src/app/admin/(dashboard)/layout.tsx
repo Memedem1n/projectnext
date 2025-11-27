@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Car, Users, LogOut, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Car, Users, LogOut, ShieldCheck, CheckCircle } from 'lucide-react'
 import { adminLogout } from '@/lib/actions/admin-auth'
 import { cn } from '@/lib/utils'
 
@@ -14,10 +14,11 @@ export default function AdminLayout({
     const pathname = usePathname()
 
     const navigation = [
-        { name: 'Panel', href: '/admin', icon: LayoutDashboard },
-        { name: 'İlanlar', href: '/admin/listings', icon: Car },
-        { name: 'Kullanıcılar', href: '/admin/users', icon: Users },
-        { name: 'Doğrulamalar', href: '/admin/verifications', icon: ShieldCheck },
+        { name: 'Panel', href: '/', icon: LayoutDashboard },
+        { name: 'İlanlar', href: '/listings', icon: Car },
+        { name: 'Kullanıcılar', href: '/users', icon: Users },
+        { name: 'Doğrulamalar', href: '/verifications', icon: ShieldCheck },
+        { name: 'Kurumsal Onaylar', href: '/approvals', icon: CheckCircle },
     ]
 
     return (

@@ -5,16 +5,18 @@ import { AdminSearch } from '@/components/admin/AdminSearch'
 import { formatDate } from '@/lib/utils'
 import { approveListing, rejectListing } from '@/lib/actions/admin-listings'
 import Link from 'next/link'
+import { DeleteListingButton } from '@/components/admin/DeleteListingButton'
 
 export const revalidate = 0
 
 interface AdminListingsPageProps {
-    searchParams: { [key: string]: string | string[] | undefined }
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export default async function AdminListingsPage({ searchParams }: AdminListingsPageProps) {
-    const query = searchParams.q as string;
-    const statusFilter = searchParams.status as string; // "pending", "active", "all"
+    const params = await searchParams;
+    const query = params.q as string;
+    const statusFilter = params.status as string; // "pending", "active", "all"
 
     // Build where clause
     let where: any = {};
@@ -24,8 +26,12 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
         where.status = "PENDING";
     } else if (statusFilter === "active") {
         where.status = "ACTIVE";
+    } else if (statusFilter === "deleted") {
+        where.status = "DELETED";
+    } else {
+        // Default: Don't show deleted listings unless explicitly asked
+        where.status = { not: "DELETED" };
     }
-    // If "all" or undefined, no status filter
 
     if (query) {
         where.OR = [
@@ -66,22 +72,28 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
             {/* Status Filter Tabs */}
             <div className="flex items-center gap-2 mb-6 bg-white/5 p-1 rounded-lg border border-white/10 w-fit">
                 <Link
-                    href="/admin/listings"
+                    href="/listings"
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${!statusFilter ? "bg-brand-gold text-black" : "text-muted-foreground hover:text-white"}`}
                 >
                     Tümü
                 </Link>
                 <Link
-                    href="/admin/listings?status=pending"
+                    href="/listings?status=pending"
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${statusFilter === "pending" ? "bg-yellow-500 text-black" : "text-muted-foreground hover:text-white"}`}
                 >
                     Onay Bekleyenler
                 </Link>
                 <Link
-                    href="/admin/listings?status=active"
+                    href="/listings?status=active"
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${statusFilter === "active" ? "bg-green-500 text-black" : "text-muted-foreground hover:text-white"}`}
                 >
                     Yayında
+                </Link>
+                <Link
+                    href="/listings?status=deleted"
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${statusFilter === "deleted" ? "bg-red-500 text-black" : "text-muted-foreground hover:text-white"}`}
+                >
+                    Silinenler
                 </Link>
             </div>
 
@@ -141,11 +153,13 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                                         <td className="p-4">
                                             <span className={`px-2 py-1 text-xs rounded border ${listing.status === "ACTIVE" ? "bg-green-500/20 text-green-500 border-green-500/20" :
                                                 listing.status === "PENDING" ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/20" :
-                                                    "bg-red-500/20 text-red-500 border-red-500/20"
+                                                    listing.status === "DELETED" ? "bg-gray-500/20 text-gray-500 border-gray-500/20" :
+                                                        "bg-red-500/20 text-red-500 border-red-500/20"
                                                 }`}>
                                                 {listing.status === "ACTIVE" && "Yayında"}
                                                 {listing.status === "PENDING" && "Onay Bekliyor"}
                                                 {listing.status === "REJECTED" && "Reddedildi"}
+                                                {listing.status === "DELETED" && "Silindi"}
                                             </span>
                                         </td>
                                         <td className="p-4 text-gray-400 text-sm">
@@ -172,6 +186,9 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                                                             </button>
                                                         </form>
                                                     </>
+                                                )}
+                                                {listing.status !== "DELETED" && (
+                                                    <DeleteListingButton listingId={listing.id} />
                                                 )}
                                                 <AdminListingActions id={listing.id} slug={listing.category.slug} />
                                             </div>

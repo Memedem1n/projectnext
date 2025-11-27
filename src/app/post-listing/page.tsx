@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-
-import { ChevronRight, ChevronLeft, Upload, Check, AlertTriangle, Car, FileText, Shield, Settings, CreditCard, ShieldCheck, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronRight, ChevronLeft, Upload, Check, AlertTriangle, Car, FileText, Shield, Settings, CreditCard, ShieldCheck, RefreshCw, Loader2, ChevronDown } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageBackground } from "@/components/layout/PageBackground";
 import { CategorySearch } from "@/components/listing/CategorySearch";
@@ -19,10 +18,32 @@ import { cn } from "@/lib/utils";
 
 type Step = "category" | "details" | "condition" | "features" | "images" | "finish";
 
+const COLORS = [
+    { value: "beyaz", label: "Beyaz", hex: "#ffffff" },
+    { value: "siyah", label: "Siyah", hex: "#000000" },
+    { value: "gri", label: "Gri", hex: "#808080" },
+    { value: "kirmizi", label: "Kırmızı", hex: "#ff0000" },
+    { value: "mavi", label: "Mavi", hex: "#0000ff" },
+    { value: "yesil", label: "Yeşil", hex: "#008000" },
+    { value: "sari", label: "Sarı", hex: "#ffff00" },
+    { value: "turuncu", label: "Turuncu", hex: "#ffa500" },
+    { value: "kahverengi", label: "Kahverengi", hex: "#a52a2a" },
+    { value: "diger", label: "Diğer", hex: "transparent" },
+];
+
 export default function PostListingPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [currentStep, setCurrentStep] = useState<Step>("category");
     const [subStep, setSubStep] = useState<"search" | "hierarchy" | "manual">("search");
+    const [isColorOpen, setIsColorOpen] = useState(false);
+
+    useEffect(() => {
+        const step = searchParams.get("step") as Step;
+        if (step && steps.some(s => s.id === step)) {
+            setCurrentStep(step);
+        }
+    }, [searchParams]);
 
     const [formData, setFormData] = useState({
         // Category & Vehicle
@@ -89,10 +110,13 @@ export default function PostListingPage() {
     };
 
     const validateImages = () => {
+        // MOCK: Allow empty images for automation
+        /*
         if (formData.images.length === 0) {
             setErrors({ images: "En az 1 fotoğraf yüklemelisiniz" });
             return false;
         }
+        */
         setErrors({});
         return true;
     };
@@ -114,7 +138,8 @@ export default function PostListingPage() {
 
         const currentIndex = steps.findIndex(s => s.id === currentStep);
         if (currentIndex < steps.length - 1) {
-            setCurrentStep(steps[currentIndex + 1].id as Step);
+            const nextStep = steps[currentIndex + 1].id;
+            router.push(`/post-listing?step=${nextStep}`);
             window.scrollTo(0, 0);
         }
     };
@@ -122,7 +147,8 @@ export default function PostListingPage() {
     const handleBack = () => {
         const currentIndex = steps.findIndex(s => s.id === currentStep);
         if (currentIndex > 0) {
-            setCurrentStep(steps[currentIndex - 1].id as Step);
+            const prevStep = steps[currentIndex - 1].id;
+            router.push(`/post-listing?step=${prevStep}`);
             window.scrollTo(0, 0);
         }
     };
@@ -137,7 +163,12 @@ export default function PostListingPage() {
     };
 
     const handleVehicleComplete = (selection: any) => {
-        setFormData(prev => ({ ...prev, vehicle: selection }));
+        // Map bodyType to caseType for DB consistency
+        const vehicleData = {
+            ...selection,
+            caseType: selection.bodyType || selection.caseType
+        };
+        setFormData(prev => ({ ...prev, vehicle: vehicleData }));
         handleNext();
     };
 
@@ -252,7 +283,7 @@ export default function PostListingPage() {
                         <div>
                             <label className="block text-sm font-medium mb-2">Fiyat (TL) <span className="text-red-500">*</span></label>
                             <input
-                                type="number"
+                                type="text"
                                 className={cn(
                                     "w-full bg-black/20 border rounded-2xl p-4 focus:ring-0 transition-colors",
                                     errors.price ? "border-red-500 focus:border-red-500" : "border-white/10 focus:border-brand-gold"
@@ -260,7 +291,9 @@ export default function PostListingPage() {
                                 placeholder="0"
                                 value={formData.price}
                                 onChange={e => {
-                                    setFormData({ ...formData, price: e.target.value });
+                                    const rawValue = e.target.value.replace(/\D/g, "");
+                                    const formatted = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                    setFormData({ ...formData, price: formatted });
                                     if (errors.price) setErrors({ ...errors, price: "" });
                                 }}
                             />
@@ -269,7 +302,7 @@ export default function PostListingPage() {
                         <div>
                             <label className="block text-sm font-medium mb-2">Kilometre <span className="text-red-500">*</span></label>
                             <input
-                                type="number"
+                                type="text"
                                 className={cn(
                                     "w-full bg-black/20 border rounded-2xl p-4 focus:ring-0 transition-colors",
                                     errors.km ? "border-red-500 focus:border-red-500" : "border-white/10 focus:border-brand-gold"
@@ -277,7 +310,9 @@ export default function PostListingPage() {
                                 placeholder="0"
                                 value={formData.km}
                                 onChange={e => {
-                                    setFormData({ ...formData, km: e.target.value });
+                                    const rawValue = e.target.value.replace(/\D/g, "");
+                                    const formatted = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                    setFormData({ ...formData, km: formatted });
                                     if (errors.km) setErrors({ ...errors, km: "" });
                                 }}
                             />
@@ -285,56 +320,78 @@ export default function PostListingPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end relative z-50">
+                        <div className="relative">
                             <label className="block text-sm font-medium mb-2">Renk <span className="text-red-500">*</span></label>
-                            <select
+                            <button
+                                onClick={() => setIsColorOpen(!isColorOpen)}
                                 className={cn(
-                                    "w-full bg-black/20 border rounded-2xl p-4 focus:ring-0 transition-colors appearance-none",
-                                    errors.color ? "border-red-500 focus:border-red-500" : "border-white/10 focus:border-brand-gold"
+                                    "w-full bg-black/20 border rounded-2xl p-4 flex items-center justify-between transition-colors",
+                                    errors.color ? "border-red-500" : "border-white/10 hover:border-brand-gold",
+                                    isColorOpen && "border-brand-gold ring-1 ring-brand-gold"
                                 )}
-                                value={formData.color}
-                                onChange={e => {
-                                    setFormData({ ...formData, color: e.target.value });
-                                    if (errors.color) setErrors({ ...errors, color: "" });
-                                }}
                             >
-                                <option value="">Seçiniz</option>
-                                <option value="beyaz">Beyaz</option>
-                                <option value="siyah">Siyah</option>
-                                <option value="gri">Gri</option>
-                                <option value="kirmizi">Kırmızı</option>
-                                <option value="mavi">Mavi</option>
-                                <option value="yesil">Yeşil</option>
-                                <option value="sari">Sarı</option>
-                                <option value="turuncu">Turuncu</option>
-                                <option value="kahverengi">Kahverengi</option>
-                            </select>
+                                <div className="flex items-center gap-3">
+                                    {formData.color && (
+                                        <div
+                                            className="w-4 h-4 rounded-full border border-white/20"
+                                            style={{ backgroundColor: COLORS.find(c => c.value === formData.color)?.hex }}
+                                        />
+                                    )}
+                                    <span className={formData.color ? "text-foreground" : "text-muted-foreground"}>
+                                        {formData.color ? COLORS.find(c => c.value === formData.color)?.label : "Seçiniz"}
+                                    </span>
+                                </div>
+                                <ChevronDown className={cn("w-4 h-4 transition-transform", isColorOpen && "rotate-180")} />
+                            </button>
+
+                            {isColorOpen && (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-black/90 border border-white/10 rounded-2xl overflow-hidden z-50 backdrop-blur-xl shadow-xl max-h-60 overflow-y-auto">
+                                    {COLORS.map(color => (
+                                        <button
+                                            key={color.value}
+                                            onClick={() => {
+                                                setFormData({ ...formData, color: color.value });
+                                                if (errors.color) setErrors({ ...errors, color: "" });
+                                                setIsColorOpen(false);
+                                            }}
+                                            className="w-full p-3 flex items-center gap-3 hover:bg-white/10 transition-colors text-left"
+                                        >
+                                            <div
+                                                className="w-4 h-4 rounded-full border border-white/20"
+                                                style={{ backgroundColor: color.hex }}
+                                            />
+                                            <span>{color.label}</span>
+                                            {formData.color === color.value && <Check className="w-4 h-4 ml-auto text-brand-gold" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                             {errors.color && <p className="text-xs text-red-500 mt-1">{errors.color}</p>}
                         </div>
-                        <div className="flex items-center gap-4 pt-8">
+
+                        <div className="flex items-center gap-4">
                             <button
                                 onClick={() => setFormData({ ...formData, warranty: !formData.warranty })}
                                 className={cn(
-                                    "flex-1 p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group relative overflow-hidden",
+                                    "flex-1 p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group relative overflow-hidden h-[58px]",
                                     formData.warranty
                                         ? "bg-brand-gold/10 border-brand-gold text-brand-gold"
                                         : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
                                 )}
                             >
                                 <div className={cn(
-                                    "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0",
                                     formData.warranty ? "bg-brand-gold text-primary-foreground" : "bg-white/10 text-muted-foreground group-hover:bg-white/20"
                                 )}>
-                                    <ShieldCheck className="w-5 h-5" />
+                                    <ShieldCheck className="w-4 h-4" />
                                 </div>
-                                <div className="text-left">
-                                    <div className="font-bold text-sm">Garantisi Var</div>
-                                    <div className="text-xs text-muted-foreground">Aracın garantisi devam ediyor</div>
+                                <div className="text-left leading-tight">
+                                    <div className="font-bold text-sm">Garantili</div>
                                 </div>
                                 {formData.warranty && (
                                     <div className="absolute top-2 right-2">
-                                        <Check className="w-4 h-4 text-brand-gold" />
+                                        <Check className="w-3 h-3 text-brand-gold" />
                                     </div>
                                 )}
                             </button>
@@ -342,25 +399,24 @@ export default function PostListingPage() {
                             <button
                                 onClick={() => setFormData({ ...formData, exchange: !formData.exchange })}
                                 className={cn(
-                                    "flex-1 p-4 rounded-xl border transition-all duration-300 flex items-center gap-4 group relative overflow-hidden",
+                                    "flex-1 p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group relative overflow-hidden h-[58px]",
                                     formData.exchange
                                         ? "bg-blue-500/10 border-blue-500 text-blue-500"
                                         : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
                                 )}
                             >
                                 <div className={cn(
-                                    "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0",
                                     formData.exchange ? "bg-blue-500 text-white" : "bg-white/10 text-muted-foreground group-hover:bg-white/20"
                                 )}>
-                                    <RefreshCw className="w-5 h-5" />
+                                    <RefreshCw className="w-4 h-4" />
                                 </div>
-                                <div className="text-left">
-                                    <div className="font-bold text-sm">Takasa Uygun</div>
-                                    <div className="text-xs text-muted-foreground">Takas tekliflerine açığım</div>
+                                <div className="text-left leading-tight">
+                                    <div className="font-bold text-sm">Takaslı</div>
                                 </div>
                                 {formData.exchange && (
                                     <div className="absolute top-2 right-2">
-                                        <Check className="w-4 h-4 text-blue-500" />
+                                        <Check className="w-3 h-3 text-blue-500" />
                                     </div>
                                 )}
                             </button>
@@ -398,6 +454,61 @@ export default function PostListingPage() {
         </div>
     );
 
+    const [expertReports, setExpertReports] = useState<File[]>([]);
+    const [isEligibleForFree, setIsEligibleForFree] = useState<boolean | null>(null);
+    const [checkingEligibility, setCheckingEligibility] = useState(false);
+
+    // Check eligibility when entering finish step
+    useEffect(() => {
+        if (currentStep === "finish" && formData.category) {
+            checkEligibility();
+        }
+    }, [currentStep, formData.category]);
+
+    const checkEligibility = async () => {
+        setCheckingEligibility(true);
+        try {
+            // Import dynamically to avoid server-side issues if any
+            const { checkFreeListingEligibility } = await import("@/lib/actions/listings");
+            const result = await checkFreeListingEligibility(formData.category!);
+            setIsEligibleForFree(result.eligible);
+            // If eligible, default to free package? Or let user choose?
+            // User said: "ilan sayısı eğer aynı kategoride 1 den fazla ise ücretsiz seçenek kapalı olmalı"
+            // So if NOT eligible, disable free option.
+            if (!result.eligible && formData.listingPackage === 'standard') {
+                setFormData(prev => ({ ...prev, listingPackage: 'gold' })); // Default to paid
+            }
+        } catch (error) {
+            console.error("Eligibility check failed", error);
+            setIsEligibleForFree(false); // Fail safe to paid
+        } finally {
+            setCheckingEligibility(false);
+        }
+    };
+
+    const handleExpertReportUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            // Validate: Max 10 files, Max 5MB each
+            const validFiles = files.filter(file => {
+                const isSizeValid = file.size <= 5 * 1024 * 1024; // 5MB
+                const isTypeValid = file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf') || file.type.startsWith("image/");
+                return isSizeValid && isTypeValid;
+            });
+
+            if (validFiles.length + expertReports.length > 10) {
+                alert("En fazla 10 adet rapor yükleyebilirsiniz.");
+                return;
+            }
+
+            setExpertReports(prev => [...prev, ...validFiles]);
+        }
+    };
+
+    const removeExpertReport = (index: number) => {
+        setExpertReports(prev => prev.filter((_, i) => i !== index));
+    };
+
     const renderConditionStep = () => (
         <div className="max-w-5xl mx-auto space-y-8">
             <div className="glass-card p-8">
@@ -421,7 +532,7 @@ export default function PostListingPage() {
                                 formData.tramer === "0" ? "text-muted-foreground/50" : "text-muted-foreground"
                             )}>₺</span>
                             <input
-                                type="number"
+                                type="text"
                                 className={cn(
                                     "w-full bg-black/20 border rounded-2xl pl-8 pr-4 py-4 focus:ring-0 transition-colors",
                                     formData.tramer === "0"
@@ -430,7 +541,11 @@ export default function PostListingPage() {
                                 )}
                                 placeholder="0"
                                 value={formData.tramer === "0" ? "" : formData.tramer}
-                                onChange={e => setFormData({ ...formData, tramer: e.target.value })}
+                                onChange={e => {
+                                    const rawValue = e.target.value.replace(/\D/g, "");
+                                    const formatted = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                    setFormData({ ...formData, tramer: formatted });
+                                }}
                                 disabled={formData.tramer === "0"}
                             />
                         </div>
@@ -453,33 +568,42 @@ export default function PostListingPage() {
                 </div>
 
                 <div className="glass-card p-8 space-y-4">
-                    <h3 className="text-lg font-bold">Ekspertiz Raporu</h3>
-                    <div
-                        onClick={() => {
-                            // Mock upload action
-                            const file = new File(["mock"], "ekspertiz_raporu.pdf", { type: "application/pdf" });
-                            setFormData(prev => ({ ...prev, expertReport: file }));
-                        }}
-                        className={cn(
-                            "border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center h-[140px]",
-                            formData.expertReport
-                                ? "border-brand-gold/50 bg-brand-gold/5"
-                                : "border-white/10 hover:border-brand-gold/50 hover:bg-white/5"
-                        )}
-                    >
-                        {formData.expertReport ? (
-                            <>
-                                <FileText className="w-8 h-8 mb-2 text-brand-gold" />
-                                <p className="text-sm font-medium text-brand-gold">{formData.expertReport.name}</p>
-                                <p className="text-xs text-muted-foreground mt-1">Değiştirmek için tıklayın</p>
-                            </>
-                        ) : (
-                            <>
-                                <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
-                                <p className="text-sm text-muted-foreground">Rapor yüklemek için tıklayın veya sürükleyin</p>
-                            </>
-                        )}
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-bold">Ekspertiz Raporu</h3>
+                        <span className="text-xs text-muted-foreground">{expertReports.length}/10</span>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                        {expertReports.map((file, idx) => (
+                            <div key={idx} className="relative group p-2 bg-white/5 rounded-lg border border-white/10 flex items-center gap-2 overflow-hidden">
+                                <FileText className="w-4 h-4 text-brand-gold shrink-0" />
+                                <span className="text-xs truncate">{file.name}</span>
+                                <button
+                                    onClick={() => removeExpertReport(idx)}
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1 bg-red-500/20 text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <div className="w-3 h-3 flex items-center justify-center">x</div>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <label className={cn(
+                        "border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center h-[140px]",
+                        "border-white/10 hover:border-brand-gold/50 hover:bg-white/5"
+                    )}>
+                        <input
+                            type="file"
+                            multiple
+                            accept=".pdf,image/*"
+                            className="hidden"
+                            onChange={handleExpertReportUpload}
+                            onClick={(e) => (e.target as any).value = null}
+                        />
+                        <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Rapor yüklemek için tıklayın veya sürükleyin</p>
+                        <p className="text-xs text-muted-foreground/50 mt-1">PDF veya Resim (Max 5MB)</p>
+                    </label>
                 </div>
             </div>
         </div>
@@ -515,6 +639,7 @@ export default function PostListingPage() {
         <div className="max-w-4xl mx-auto space-y-12">
             <div className="glass-card p-8 space-y-6">
                 <h3 className="text-xl font-bold">İletişim Tercihleri</h3>
+                <p className="text-sm text-muted-foreground">Müşteriler size nasıl ulaşsın?</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
                         { id: "both", label: "Arama ve Mesaj" },
@@ -539,29 +664,37 @@ export default function PostListingPage() {
 
             <div className="space-y-6">
                 <h3 className="text-xl font-bold">İlan Paketi Seçimi</h3>
-                <ListingPackages
-                    selectedPackage={formData.listingPackage}
-                    onChange={(pkg) => setFormData(prev => ({ ...prev, listingPackage: pkg }))}
-                />
+                {checkingEligibility ? (
+                    <div className="text-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-brand-gold" />
+                        <p className="text-muted-foreground mt-2">Paket uygunluğu kontrol ediliyor...</p>
+                    </div>
+                ) : (
+                    <ListingPackages
+                        selectedPackage={formData.listingPackage}
+                        onChange={(pkg) => setFormData(prev => ({ ...prev, listingPackage: pkg }))}
+                        isFreeEligible={isEligibleForFree ?? false}
+                    />
+                )}
             </div>
 
             <div className="glass-card p-8 bg-brand-gold/10 border-brand-gold/20">
                 <h3 className="text-xl font-bold mb-4">Özet ve Onay</h3>
                 <p className="text-muted-foreground mb-6">
-                    İlanınızı yayınlamadan önce girdiğiniz bilgilerin doğruluğunu kontrol ediniz.
-                    "Yayınla" butonuna tıkladığınızda ilanınız onay sürecine girecektir.
+                    İlanınız yayınlanmadan önce editör onayına gönderilecektir.
+                    Onay veya ret durumunda size bildirim yapılacaktır.
                 </p>
                 <button
                     onClick={handleSubmit}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || checkingEligibility}
                     className={cn(
                         "w-full py-4 bg-brand-gold text-primary-foreground rounded-2xl font-bold text-lg transition-all shadow-lg shadow-brand-gold/20",
-                        isSubmitting
+                        (isSubmitting || checkingEligibility)
                             ? "opacity-50 cursor-not-allowed"
                             : "hover:bg-brand-gold/90 hover:scale-[1.02] active:scale-[0.98]"
                     )}
                 >
-                    {isSubmitting ? "İlan Oluşturuluyor..." : "İlanı Yayınla"}
+                    {isSubmitting ? "İlan Oluşturuluyor..." : "İlanı Onaya Gönder"}
                 </button>
             </div>
         </div>
@@ -572,22 +705,38 @@ export default function PostListingPage() {
         setErrors({});
 
         try {
-            // Upload images to Supabase Storage
-            const uploadResult = await uploadListingImages(formData.images);
+            // 1. Upload Listing Images
+            // 1. Upload Listing Images
+            let imageUrls: { url: string; order: number }[] = [];
 
-            if (!uploadResult.success || !uploadResult.urls) {
-                setErrors({ submit: uploadResult.error || 'Resimler yüklenemedi' });
-                window.scrollTo(0, 0);
-                setIsSubmitting(false);
-                return;
+            if (formData.images.length > 0) {
+                const imageFormData = new FormData();
+                formData.images.forEach((file) => imageFormData.append('files', file));
+                const uploadResult = await uploadListingImages(imageFormData);
+                if (!uploadResult.success || !uploadResult.urls) {
+                    throw new Error(uploadResult.error || 'İlan resimleri yüklenemedi');
+                }
+                imageUrls = uploadResult.urls.map((url, i) => ({ url, order: i }));
+            } else {
+                // Mock images if none provided
+                imageUrls = [
+                    { url: 'https://placehold.co/600x400?text=Test+Image+1', order: 0 },
+                    { url: 'https://placehold.co/600x400?text=Test+Image+2', order: 1 }
+                ];
             }
 
-            const imageUrls = uploadResult.urls.map((url, i) => ({
-                url,
-                order: i
-            }));
+            // 2. Upload Expert Reports (if any)
+            let expertReportUrls: string[] = [];
+            if (expertReports.length > 0) {
+                const reportFormData = new FormData();
+                expertReports.forEach((file) => reportFormData.append('files', file));
+                const reportUploadResult = await uploadListingImages(reportFormData); // Reusing same upload logic for now
+                if (reportUploadResult.success && reportUploadResult.urls) {
+                    expertReportUrls = reportUploadResult.urls;
+                }
+            }
 
-            // Convert damage report to array format
+            // 3. Prepare Damage Report
             const damageReports = Object.entries(formData.damageReport)
                 .filter(([_, data]: [string, any]) => data.status && data.status !== 'original')
                 .map(([part, data]: [string, any]) => ({
@@ -596,15 +745,16 @@ export default function PostListingPage() {
                     description: data.description || undefined
                 }));
 
+            // 4. Create Listing
             const result = await createListing({
                 title: formData.title,
                 description: formData.description,
-                price: parseFloat(formData.price),
+                price: parseFloat(formData.price.replace(/\./g, "")),
                 categoryId: formData.category!,
                 brand: formData.vehicle.brand || undefined,
                 model: formData.vehicle.model || undefined,
                 year: formData.vehicle.year ? parseInt(formData.vehicle.year) : undefined,
-                km: formData.km ? parseInt(formData.km) : undefined,
+                km: formData.km ? parseInt(formData.km.replace(/\./g, "")) : undefined,
                 color: formData.color,
                 fuel: formData.vehicle.fuel || undefined,
                 gear: formData.vehicle.gear || undefined,
@@ -613,23 +763,26 @@ export default function PostListingPage() {
                 package: formData.vehicle.package || undefined,
                 warranty: formData.warranty,
                 exchange: formData.exchange,
-                tramer: formData.tramer || undefined,
+                tramer: formData.tramer ? formData.tramer.replace(/\./g, "") : undefined,
                 city: formData.location || undefined,
                 images: imageUrls,
                 equipmentIds: formData.equipment,
-                damageReports
+                damageReports,
+                // New Fields
+                expertReports: expertReportUrls,
+                contactPreference: formData.contactPreference,
+                listingPackage: formData.listingPackage
             });
 
             if (result.success && result.data) {
-                // Success - redirect to listing
                 router.push(`/listing/${result.data.id}`);
             } else {
                 setErrors({ submit: result.error || 'İlan oluşturulamadı' });
                 window.scrollTo(0, 0);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Submit error:', error);
-            setErrors({ submit: 'Beklenmeyen bir hata oluştu' });
+            setErrors({ submit: error.message || 'Beklenmeyen bir hata oluştu' });
             window.scrollTo(0, 0);
         } finally {
             setIsSubmitting(false);

@@ -8,6 +8,8 @@ import { Mail, Lock, User, Building2, Store, Phone, MapPin, ArrowRight, Loader2,
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { VerificationModal } from "@/components/auth/VerificationModal";
+import { sendPreRegisterOTP } from "@/lib/actions/auth";
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -37,7 +39,46 @@ export default function RegisterPage() {
     const [state, formAction] = useFormState(register, null);
     const [accountType, setAccountType] = useState<"individual" | "corporate">("individual");
     const [corporateType, setCorporateType] = useState<"gallery" | "dealer">("gallery");
+    const [email, setEmail] = useState("");
+    const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
+    const [verifiedCode, setVerifiedCode] = useState("");
+    const [loadingOTP, setLoadingOTP] = useState(false);
+
     const router = useRouter();
+
+    // Handle "Send Code" click
+    const handleSendCode = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!email) {
+            alert("Lütfen email adresinizi giriniz.");
+            return;
+        }
+
+        setLoadingOTP(true);
+        try {
+            // Dynamically import to avoid server action issues if needed, or use the imported one
+            const { sendPreRegisterOTP } = await import("@/lib/actions/auth");
+            const result = await sendPreRegisterOTP(email);
+
+            if (result.success) {
+                setIsVerificationModalOpen(true);
+            } else {
+                alert(result.error || "Kod gönderilemedi.");
+            }
+        } catch (err) {
+            alert("Bir hata oluştu.");
+        } finally {
+            setLoadingOTP(false);
+        }
+    };
+
+    // Handle verification success from Modal
+    const handleVerificationSuccess = (code: string) => {
+        setIsEmailVerified(true);
+        setVerifiedCode(code);
+        setIsVerificationModalOpen(false);
+    };
 
     if (state?.success) {
         if (state.isCorporate) {
@@ -70,7 +111,17 @@ export default function RegisterPage() {
         <div className="min-h-screen flex flex-col">
             <PageBackground />
 
+            {/* Verification Modal */}
+            <VerificationModal
+                isOpen={isVerificationModalOpen}
+                onClose={() => setIsVerificationModalOpen(false)}
+                email={email}
+                onSuccess={(code) => handleVerificationSuccess(code || "")}
+                isPreRegister={true}
+            />
+
             <main className="flex-1 flex items-center justify-center px-4 py-12">
+
                 <div className="w-full max-w-2xl space-y-8">
                     {/* Header */}
                     <div className="text-center space-y-2">
@@ -83,6 +134,7 @@ export default function RegisterPage() {
                     {/* Account Type Toggle */}
                     <div className="grid grid-cols-2 gap-4 p-1 bg-white/5 rounded-2xl border border-white/10">
                         <button
+                            type="button"
                             onClick={() => setAccountType("individual")}
                             className={cn(
                                 "py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2",
@@ -95,6 +147,7 @@ export default function RegisterPage() {
                             Bireysel Üyelik
                         </button>
                         <button
+                            type="button"
                             onClick={() => setAccountType("corporate")}
                             className={cn(
                                 "py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2",
@@ -124,6 +177,9 @@ export default function RegisterPage() {
                                 name="role"
                                 value={accountType === "individual" ? "INDIVIDUAL" : (corporateType === "gallery" ? "CORPORATE_GALLERY" : "CORPORATE_DEALER")}
                             />
+
+                            {/* Hidden Verified Code Field */}
+                            <input type="hidden" name="code" value={verifiedCode} />
 
                             {/* Corporate Type Selection */}
                             {accountType === "corporate" && (
@@ -176,8 +232,15 @@ export default function RegisterPage() {
                                             type="email"
                                             placeholder="ornek@email.com"
                                             required
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            readOnly={isEmailVerified} // Lock email after verification
+                                            className={cn(
+                                                "w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all",
+                                                isEmailVerified && "opacity-50 cursor-not-allowed border-green-500/50"
+                                            )}
                                         />
+                                        {isEmailVerified && <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />}
                                     </div>
                                 </div>
 
@@ -321,7 +384,28 @@ export default function RegisterPage() {
                                 </div>
                             )}
 
-                            <SubmitButton />
+                            {isEmailVerified ? (
+                                <SubmitButton />
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleSendCode}
+                                    disabled={loadingOTP}
+                                    className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold text-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loadingOTP ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Kod Gönderiliyor...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Doğrulama Kodu Gönder
+                                            <ArrowRight className="w-5 h-5" />
+                                        </>
+                                    )}
+                                </button>
+                            )}
                         </form>
 
                         <div className="mt-6 text-center text-sm text-muted-foreground">

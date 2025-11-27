@@ -10,20 +10,44 @@ const prisma = new PrismaClient();
 
 interface EurotaxRow {
     full_path: string;
-    path_1: string;
-    path_2: string;
-    path_3: string;
-    path_4: string;
-    path_5: string;
-    path_6: string;
-    path_7: string;
-    path_8: string;
+    path_1: string; // Type (Otomobil)
+    path_2: string; // Year (2025)
+    path_3: string; // Brand (Audi)
+    path_4: string; // Model (A3)
+    path_5: string; // Fuel (Benzin)
+    path_6: string; // BodyType (Hatchback 5 kapı)
+    path_7: string; // Gear (Otomatik)
+    path_8: string; // SubModel (A3 Sportback)
+    path_9: string; // Package (35 TFSI)
+    'Motor Hacmi': string;
+    'Motor Gücü': string;
+    'Alt Model': string;
 }
 
 async function seedEurotaxVehicles() {
     console.log('🚗 Eurotax Vehicle Data Import Starting...');
 
-    const csvPath = path.join(__dirname, 'data/eurotax-vehicles.csv');
+    // CSV dosyasının kök dizinde olduğunu varsayıyoruz (önceki analizden)
+    // Ancak script prisma klasöründe olduğu için ../sahibinden_eurotax.csv yolunu deneyeceğiz
+    // Veya proje kök dizinindeki dosyayı okuyacağız.
+    // Kullanıcı analizinde dosya yolu: c:\Users\barut\OneDrive\Desktop\Sahibinden.next\sahibinden_eurotax.csv
+
+    // Proje kök dizinini bulmaya çalışalım (prisma klasörünün bir üstü)
+    const projectRoot = path.resolve(__dirname, '..');
+    const csvPath = path.join(projectRoot, 'sahibinden_eurotax.csv');
+
+    if (!fs.existsSync(csvPath)) {
+        console.error(`❌ CSV file not found at: ${csvPath}`);
+        // Fallback to prisma/data if exists
+        const altPath = path.join(__dirname, 'data/eurotax-vehicles.csv');
+        if (fs.existsSync(altPath)) {
+            console.log(`⚠️ Using alternative path: ${altPath}`);
+            // Logic for alt path if needed, but let's stick to the requested file
+        }
+        return;
+    }
+
+    console.log(`📂 Reading CSV from: ${csvPath}`);
     const fileContent = fs.readFileSync(csvPath, 'utf-8');
 
     const records: EurotaxRow[] = parse(fileContent, {
@@ -32,111 +56,42 @@ async function seedEurotaxVehicles() {
         trim: true
     });
 
-    console.log(`📊 Found ${records.length} vehicle records`);
+    console.log(`📊 Found ${records.length} vehicle records. Clearing existing data...`);
 
-    const vehicleTypes = new Map<string, any>();
+    // Clear existing data
+    await prisma.vehicleData.deleteMany({});
+    console.log('🗑️  Cleared existing VehicleData records.');
 
-    for (const record of records) {
-        const vehicleType = record.path_1;
-        const brand = record.path_3;
-        const model = record.path_4;
+    console.log('💾 Inserting new records...');
 
-        if (!vehicleType || !brand || !model) continue;
+    // Batch insert for performance
+    const batchSize = 1000;
+    for (let i = 0; i < records.length; i += batchSize) {
+        const batch = records.slice(i, i + batchSize);
 
-        if (!vehicleTypes.has(vehicleType)) {
-            vehicleTypes.set(vehicleType, new Map());
-        }
+        const dataToInsert = batch.map(record => ({
+            type: record.path_1,
+            year: parseInt(record.path_2) || 0,
+            brand: record.path_3,
+            model: record.path_4,
+            fuel: record.path_5,
+            bodyType: record.path_6,
+            gear: record.path_7,
+            subModel: record.path_8,
+            package: record.path_9,
+            motorVolume: record['Motor Hacmi'],
+            motorPower: record['Motor Gücü'],
+            version: record['Alt Model']
+        }));
 
-        const brands = vehicleTypes.get(vehicleType)!;
-        if (!brands.has(brand)) {
-            brands.set(brand, new Set());
-        }
-
-        brands.get(brand)!.add(model);
-    }
-
-    console.log(`✅ Processed ${vehicleTypes.size} vehicle types`);
-
-    let vasitaCategory = await prisma.category.findFirst({
-        where: { slug: 'vasita' }
-    });
-
-    if (!vasitaCategory) {
-        vasitaCategory = await prisma.category.create({
-            data: {
-                name: 'Vasıta',
-                slug: 'vasita',
-                icon: 'Car'
-            }
-        });
-        console.log('✅ Created Vasıta root category');
-    } else {
-        console.log(`✅ Using existing Vasıta category: ${vasitaCategory.id}`);
-    }
-
-    for (const [typeName, brands] of vehicleTypes) {
-        const typeSlug = typeName.toLowerCase()
-            .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
-            .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c')
-            .replace(/\s+/g, '-');
-
-        let vehicleTypeCategory = await prisma.category.findFirst({
-            where: { slug: typeSlug }
+        await prisma.vehicleData.createMany({
+            data: dataToInsert
         });
 
-        if (!vehicleTypeCategory) {
-            vehicleTypeCategory = await prisma.category.create({
-                data: {
-                    name: typeName,
-                    slug: typeSlug,
-                    parentId: vasitaCategory.id,
-                    icon: 'Car'
-                }
-            });
-        }
-
-        console.log(`  📁 ${typeName}: ${brands.size} brands`);
-
-        for (const [brandName, models] of brands) {
-            const brandSlug = `${typeSlug}-${brandName.toLowerCase().replace(/\s+/g, '-')}`;
-
-            let brandCategory = await prisma.category.findFirst({
-                where: { slug: brandSlug }
-            });
-
-            if (!brandCategory) {
-                brandCategory = await prisma.category.create({
-                    data: {
-                        name: brandName,
-                        slug: brandSlug,
-                        parentId: vehicleTypeCategory.id,
-                        icon: 'Car'
-                    }
-                });
-            }
-
-            for (const modelName of models) {
-                const modelSlug = `${brandSlug}-${String(modelName).toLowerCase().replace(/\s+/g, '-')}`;
-
-                const existingModel = await prisma.category.findFirst({
-                    where: { slug: modelSlug }
-                });
-
-                if (!existingModel) {
-                    await prisma.category.create({
-                        data: {
-                            name: String(modelName),
-                            slug: modelSlug,
-                            parentId: brandCategory.id,
-                            icon: 'Car'
-                        }
-                    });
-                }
-            }
-        }
+        console.log(`   Processed ${Math.min(i + batchSize, records.length)} / ${records.length}`);
     }
 
-    console.log('✅ Eurotax vehicle data imported successfully!');
+    console.log('✅ Eurotax vehicle data imported successfully into VehicleData table!');
 }
 
 seedEurotaxVehicles()

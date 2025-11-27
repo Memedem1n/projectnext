@@ -10,6 +10,11 @@ export const sendVerificationEmail = async (email: string, token: string) => {
 
     const resend = new Resend(apiKey);
 
+    if (process.env.NODE_ENV !== "production") {
+        console.log("📨 [DEV] Verification Email Sent to:", email);
+        console.log("🔑 [DEV] Token:", token);
+    }
+
     await resend.emails.send({
         from: "onboarding@resend.dev",
         to: email,

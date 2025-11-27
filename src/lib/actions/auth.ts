@@ -94,6 +94,52 @@ export async function verifyEmailOTP(email: string, code: string) {
     }
 }
 
+export async function sendPreRegisterOTP(email: string) {
+    console.log("🚀 [DEBUG] sendPreRegisterOTP called for:", email);
+    try {
+        // Check if user already exists
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            console.log("❌ [DEBUG] User already exists");
+            return { success: false, error: "Bu email adresi zaten kayıtlı." };
+        }
+
+        console.log("🔄 [DEBUG] Generating token...");
+        const verificationToken = await generateVerificationToken(email);
+        console.log("✅ [DEBUG] Token generated:", verificationToken);
+
+        await sendVerificationEmail(verificationToken.email, verificationToken.token);
+        console.log("📧 [DEBUG] Email sent (or skipped if no API key)");
+
+        return { success: true };
+    } catch (error) {
+        console.error("Send OTP error:", error);
+        return { success: false, error: "Kod gönderilemedi." };
+    }
+}
+
+export async function verifyPreRegisterOTP(email: string, code: string) {
+    try {
+        const existingToken = await prisma.verificationToken.findFirst({
+            where: { email, token: code }
+        });
+
+        if (!existingToken) {
+            return { success: false, error: "Geçersiz kod." };
+        }
+
+        if (new Date(existingToken.expires) < new Date()) {
+            return { success: false, error: "Kodun süresi dolmuş." };
+        }
+
+        // Do NOT delete token here, register action will consume it.
+        return { success: true };
+    } catch (error) {
+        console.error("Verify OTP error:", error);
+        return { success: false, error: "Doğrulama hatası." };
+    }
+}
+
 export async function register(prevState: any, formData: FormData) {
     try {
         const rawData = Object.fromEntries(formData.entries());
@@ -107,6 +153,23 @@ export async function register(prevState: any, formData: FormData) {
         }
 
         const { name, email, password, role, storeName, phone, city, district, taxNumber, tcIdentityNo, birthYear } = validatedFields.data;
+        const code = formData.get("code") as string;
+
+        if (!code) {
+            return { success: false, error: "Doğrulama kodu eksik." };
+        }
+
+        // Verify and Consume OTP
+        const existingToken = await prisma.verificationToken.findFirst({
+            where: { email, token: code }
+        });
+
+        if (!existingToken || new Date(existingToken.expires) < new Date()) {
+            return { success: false, error: "Doğrulama kodu geçersiz veya süresi dolmuş." };
+        }
+
+        // Delete token to prevent reuse
+        await prisma.verificationToken.delete({ where: { id: existingToken.id } });
 
         // TC Identity Validation (Algorithm + NVI Service)
         let isIdentityVerified = false;
@@ -209,6 +272,7 @@ export async function register(prevState: any, formData: FormData) {
                 tcIdentityNo: tcIdentityNo,
                 identityVerified: isIdentityVerified,
                 identityVerifiedAt: isIdentityVerified ? new Date() : null,
+                emailVerified: new Date(), // Mark email as verified immediately
                 dealerProfile: isCorporate ? {
                     create: {
                         storeName: storeName || name,
@@ -223,16 +287,21 @@ export async function register(prevState: any, formData: FormData) {
             },
         });
 
-        // Send Verification Email
-        try {
-            const verificationToken = await generateVerificationToken(email);
-            await sendVerificationEmail(verificationToken.email, verificationToken.token);
-        } catch (emailError) {
-            console.error("Email sending failed:", emailError);
+        // Create Session for Individual Users (Corporate needs approval)
+        if (!isCorporate) {
+            const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            const session = await encrypt({
+                id: user.id,
+                email: user.email,
+                name: user.name || "",
+                role: user.role,
+                status: user.status,
+                expires
+            });
+            (await cookies()).set("session", session, { expires, httpOnly: true });
         }
 
-        // Redirect to verify page with email param
-        return { success: true, isCorporate, redirectUrl: `/verify-email?email=${encodeURIComponent(email)}` };
+        return { success: true, isCorporate };
 
     } catch (error) {
         console.error("Registration error:", error);
@@ -275,6 +344,32 @@ export async function login(prevState: any, formData: FormData) {
             return {
                 success: false,
                 error: "Email veya şifre hatalı.",
+            };
+        }
+
+        // Check user status
+        if (user.status !== "ACTIVE") {
+            if (user.status === "PENDING") {
+                return {
+                    success: false,
+                    error: "Kurumsal üyelik başvurunuz henüz onaylanmamıştır. Belgeleriniz incelendikten sonra hesabınız aktif edilecektir.",
+                };
+            }
+            if (user.status === "REJECTED") {
+                return {
+                    success: false,
+                    error: "Kurumsal üyelik başvurunuz onaylanmamıştır. Daha fazla bilgi için destek ekibi ile iletişime geçiniz.",
+                };
+            }
+            if (user.status === "SUSPENDED") {
+                return {
+                    success: false,
+                    error: "Hesabınız askıya alınmıştır. Daha fazla bilgi için destek ekibi ile iletişime geçiniz.",
+                };
+            }
+            return {
+                success: false,
+                error: "Hesabınız şu anda aktif değildir.",
             };
         }
 

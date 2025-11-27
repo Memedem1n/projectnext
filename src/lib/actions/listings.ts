@@ -323,6 +323,42 @@ export async function getListingById(id: string) {
     }
 }
 
+export async function checkFreeListingEligibility(categoryId: string) {
+    try {
+        const cookieStore = await cookies()
+        const sessionCookie = cookieStore.get('session')
+
+        if (!sessionCookie) return { eligible: false }
+
+        const session = await decrypt(sessionCookie.value)
+        const userId = session?.userId as string
+
+        if (!userId) return { eligible: false }
+
+        // Check listings in the last year for this category
+        const oneYearAgo = new Date()
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+
+        const count = await prisma.listing.count({
+            where: {
+                userId: userId,
+                categoryId: categoryId,
+                createdAt: { gte: oneYearAgo },
+                // Exclude deleted or rejected listings from the count?
+                // Usually "used right" implies published listings.
+                status: { notIn: ['REJECTED', 'DELETED'] }
+            }
+        })
+
+        console.log(`[Eligibility Check] User: ${userId}, Category: ${categoryId}, Count: ${count}`);
+
+        return { eligible: count === 0 }
+    } catch (error) {
+        console.error('Error checking eligibility:', error)
+        return { eligible: false }
+    }
+}
+
 export async function createListing(data: any) {
     try {
         const cookieStore = await cookies()
@@ -356,15 +392,26 @@ export async function createListing(data: any) {
                 status: 'PENDING', // Default status
                 isActive: false,   // Default active state
 
+                // New Fields
+                expertReports: data.expertReports || [],
+                contactPreference: data.contactPreference || "both",
+
                 // Vehicle Details
                 brand: data.brand,
                 model: data.model,
-                year: parseInt(data.year),
-                km: parseInt(data.km),
+                year: data.year ? parseInt(data.year) : null,
+                km: data.km ? parseInt(data.km) : null,
                 color: data.color,
                 fuel: data.fuel,
                 gear: data.gear,
                 caseType: data.caseType,
+                version: data.version,
+                package: data.package,
+
+                // Status
+                warranty: data.warranty || false,
+                exchange: data.exchange || false,
+                tramer: data.tramer,
 
                 // Location
                 city: data.city,
@@ -372,16 +419,16 @@ export async function createListing(data: any) {
 
                 // Relations
                 images: {
-                    create: data.images.map((url: string, index: number) => ({
-                        url,
-                        order: index,
-                        isCover: index === 0
+                    create: data.images.map((img: any, index: number) => ({
+                        url: img.url,
+                        order: img.order ?? index,
+                        isCover: (img.order ?? index) === 0
                     }))
                 },
 
                 // Equipment
                 equipment: {
-                    create: data.equipment?.map((equipmentId: string) => ({
+                    create: data.equipmentIds?.map((equipmentId: string) => ({
                         equipment: {
                             connect: { id: equipmentId }
                         }
@@ -390,9 +437,10 @@ export async function createListing(data: any) {
 
                 // Damage Report
                 damage: {
-                    create: data.damage?.map((item: any) => ({
+                    create: data.damageReports?.map((item: any) => ({
                         part: item.part,
-                        status: item.status
+                        status: item.status,
+                        description: item.description
                     })) || []
                 }
             }
