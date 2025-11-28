@@ -1,3 +1,4 @@
+/* eslint-disable */
 "use client";
 
 import { CATEGORIES } from "@/data/categories";

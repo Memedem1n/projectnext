@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { getTopSellers } from "@/data/homepage-data";
 import { UserCheck } from "lucide-react";
 

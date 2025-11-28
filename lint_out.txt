@@ -1,0 +1,234 @@
+
+> sparse-ride@0.1.0 lint
+> eslint
+
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\app\page.tsx
+  61:40  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\app\page.tsx:61:40
+  59 |   const categoryStats: Record<string, number> = {};
+  60 |   CATEGORIES.forEach(cat => {
+> 61 |     categoryStats[cat.id] = Math.floor(Math.random() * 5000) + 100;
+     |                                        ^^^^^^^^^^^^^ Cannot call impure function
+  62 |   });
+  63 |
+  64 |   return (  react-hooks/purity
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\app\post-listing\page.tsx
+   46:8  warning  React Hook useEffect has a missing dependency: 'steps'. Either include it or remove the dependency array             react-hooks/exhaustive-deps
+  466:8  warning  React Hook useEffect has a missing dependency: 'checkEligibility'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\account\FavoritesTab.tsx
+  16:9  error  Error: Cannot access variable before it is declared
+
+`loadFavorites` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\account\FavoritesTab.tsx:16:9
+  14 |
+  15 |     useEffect(() => {
+> 16 |         loadFavorites();
+     |         ^^^^^^^^^^^^^ `loadFavorites` accessed before it is declared
+  17 |     }, []);
+  18 |
+  19 |     const loadFavorites = async () => {
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\account\FavoritesTab.tsx:19:5
+  17 |     }, []);
+  18 |
+> 19 |     const loadFavorites = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 20 |         setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 21 |         const result = await getUserFavorites();
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 22 |         if (result.success && result.data) {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 23 |             setFavorites(result.data.map(adaptListingToMockFormat));
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 24 |         } else {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 25 |             setError(result.error || "Favoriler yüklenemedi");
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 26 |         }
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |         setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |     };
+     | ^^^^^^^ `loadFavorites` is declared here
+  29 |
+  30 |     const handleRemoveFavorite = async (id: string) => {
+  31 |         const result = await toggleFavorite(id);  react-hooks/immutability
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\account\MyListingsTab.tsx
+  15:9  error  Error: Cannot access variable before it is declared
+
+`loadListings` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\account\MyListingsTab.tsx:15:9
+  13 |
+  14 |     useEffect(() => {
+> 15 |         loadListings();
+     |         ^^^^^^^^^^^^ `loadListings` accessed before it is declared
+  16 |     }, []);
+  17 |
+  18 |     const loadListings = async () => {
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\account\MyListingsTab.tsx:18:5
+  16 |     }, []);
+  17 |
+> 18 |     const loadListings = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |         setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 20 |         const result = await getUserListings();
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 21 |         if (result.success && result.data) {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 22 |             setListings(result.data as ListingWithRelations[]);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 23 |         } else {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 24 |             setError(result.error || "İlanlar yüklenemedi");
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 25 |         }
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 26 |         setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |     };
+     | ^^^^^^^ `loadListings` is declared here
+  28 |
+  29 |     const handleDelete = async (id: string) => {
+  30 |         if (!confirm("Bu ilanı silmek istediğinizden emin misiniz?")) return;  react-hooks/immutability
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\account\SavedFiltersTab.tsx
+  17:9  error  Error: Cannot access variable before it is declared
+
+`loadFilters` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\account\SavedFiltersTab.tsx:17:9
+  15 |
+  16 |     useEffect(() => {
+> 17 |         loadFilters()
+     |         ^^^^^^^^^^^ `loadFilters` accessed before it is declared
+  18 |     }, [])
+  19 |
+  20 |     const loadFilters = async () => {
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\account\SavedFiltersTab.tsx:20:5
+  18 |     }, [])
+  19 |
+> 20 |     const loadFilters = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 21 |         setLoading(true)
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 22 |         const result = await getSavedFilters() as any
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 23 |         if (result.success && result.data) {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 24 |             setFilters(result.data)
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 25 |         } else {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 26 |             setError(result.error || "Kaydedilmiş aramalar yüklenemedi")
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |         }
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |         setLoading(false)
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 29 |     }
+     | ^^^^^^ `loadFilters` is declared here
+  30 |
+  31 |     const handleDelete = async (id: string) => {
+  32 |         if (!confirm("Bu aramayı silmek istediğinizden emin misiniz?")) return  react-hooks/immutability
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\category\EmlakFilterSection.tsx
+  50:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\category\EmlakFilterSection.tsx:50:9
+  48 |
+  49 |     useEffect(() => {
+> 50 |         setFilters({
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  51 |             minPrice: searchParams.get("minPrice") || "",
+  52 |             maxPrice: searchParams.get("maxPrice") || "",
+  53 |             minSqm: searchParams.get("minSqm") || "",  react-hooks/set-state-in-effect
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\category\FilterSidebar.tsx
+  199:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\category\FilterSidebar.tsx:199:9
+  197 |         }
+  198 |
+> 199 |         setFilters({
+      |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  200 |             minPrice: searchParams.get("minPrice") || "",
+  201 |             maxPrice: searchParams.get("maxPrice") || "",
+  202 |             minYear: searchParams.get("minYear") || "",  react-hooks/set-state-in-effect
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\home\Hero3DBackground.tsx
+  73:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\home\Hero3DBackground.tsx:73:9
+  71 |             });
+  72 |         }
+> 73 |         setIcons(initialIcons);
+     |         ^^^^^^^^ Avoid calling setState() directly within an effect
+  74 |         nextIconIndexRef.current = maxIcons;
+  75 |     }, []);
+  76 |  react-hooks/set-state-in-effect
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\home\HeroSearch.tsx
+  48:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\home\HeroSearch.tsx:48:13
+  46 |         if (searchQuery.trim().length >= 2) {
+  47 |             const results = getSearchSuggestions(searchQuery);
+> 48 |             setSuggestions(results);
+     |             ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  49 |             setShowSuggestions(true);
+  50 |         } else {
+  51 |             setSuggestions([]);  react-hooks/set-state-in-effect
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\home\TopSellers.tsx
+  26:45  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\barut\OneDrive\Desktop\Sahibinden.next\src\components\home\TopSellers.tsx:26:45
+  24 |                             </div>
+  25 |                             <div className="text-xs font-medium bg-green-500/10 text-green-500 px-2 py-1 rounded-full">
+> 26 |                                 {Math.floor(Math.random() * 200) + 50} Sattığı İlan
+     |                                             ^^^^^^^^^^^^^ Cannot call impure function
+  27 |                             </div>
+  28 |                         </div>
+  29 |                     ))}  react-hooks/purity
+
+✖ 11 problems (9 errors, 2 warnings)
+

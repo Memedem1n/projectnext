@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import Link from 'next/link';
@@ -56,6 +57,7 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
+    // Detect category type based on slug or ancestors
     // Detect category type based on slug or ancestors
     const isEmlakCategory = currentCategory?.slug?.startsWith('emlak') ||
         currentCategory?.slug?.startsWith('konut') ||

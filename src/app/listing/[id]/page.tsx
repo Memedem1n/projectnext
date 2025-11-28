@@ -7,12 +7,12 @@ import { AttributeTable } from "@/components/listing-detail/AttributeTable";
 import { SafetyTips } from "@/components/listing-detail/SafetyTips";
 import { DamageReportsSection } from "@/components/listing-detail/DamageReportsSection";
 import { EquipmentSection } from "@/components/listing-detail/EquipmentSection";
-import { ExpertReportCard } from "@/components/listing-detail/ExpertReportCard";
 import { MapPin, Calendar, Eye, Share2, ChevronLeft } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { PageBackground } from "@/components/layout/PageBackground";
 import { FavoriteButton } from "@/components/listing/FavoriteButton";
+import { getSession } from "@/lib/session";
 
 interface PageProps {
     params: {
@@ -42,6 +42,7 @@ export const revalidate = 3600; // Revalidate every 1 hour
 
 export default async function ListingDetailPage({ params }: PageProps) {
     const { id } = await params;
+    const session = await getSession();
     const result = await getListingById(id);
 
     if (!result.success || !result.data) {
@@ -180,8 +181,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
                             </div>
                         </div>
 
-                        <SellerCard user={listing.user} />
-                        {/* Expert Report Removed */}
+                        <SellerCard
+                            user={listing.user}
+                            listingId={listing.id}
+                            currentUser={session ? { id: session.id } : null}
+                        />
                         <SafetyTips />
                     </div>
                 </div>

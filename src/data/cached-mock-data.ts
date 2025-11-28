@@ -9,6 +9,7 @@ export function getMockListings(): Listing[] {
     }
 
     // Import lazily to avoid circular dependency
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { generateMockListings } = require('./mock-data');
     cachedListings = generateMockListings(10);
     return cachedListings as Listing[];

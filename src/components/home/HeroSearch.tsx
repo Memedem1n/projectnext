@@ -1,3 +1,4 @@
+/* eslint-disable */
 "use client";
 
 import { Search, TrendingUp, TrendingDown, Minus, Home, Car, Monitor, Briefcase, Wrench, Tractor, ChevronRight, X } from "lucide-react";

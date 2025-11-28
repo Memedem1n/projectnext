@@ -19,7 +19,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
     const statusFilter = params.status as string; // "pending", "active", "all"
 
     // Build where clause
-    let where: any = {};
+    const where: any = {};
 
     // Status filter
     if (statusFilter === "pending") {

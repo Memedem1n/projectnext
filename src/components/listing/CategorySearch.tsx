@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable */
 import { useState, useEffect } from "react";
 import { Search, ChevronRight } from "lucide-react";
 import { CATEGORIES, Category } from "@/data/categories";

@@ -17,11 +17,11 @@ async function getCurrentUserId(): Promise<{ success: boolean; userId?: string; 
     }
 
     const session = await decrypt(sessionCookie.value)
-    if (!session || !session.userId) {
+    if (!session || !session.id) {
         return { success: false, error: 'Invalid session' }
     }
 
-    return { success: true, userId: session.userId as string }
+    return { success: true, userId: session.id as string }
 }
 
 /**

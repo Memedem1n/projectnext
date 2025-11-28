@@ -48,6 +48,10 @@ model User {
   dealerProfile DealerProfile?
   vehicleFeedbacks VehicleFeedback[]
   
+  // Messaging Relations
+  buyerConversations  Conversation[] @relation("BuyerConversations")
+  sellerConversations Conversation[] @relation("SellerConversations")
+  
   @@map("users")
 }
 
@@ -180,6 +184,7 @@ model Listing {
   equipment       ListingEquipment[]
   damage          DamageReport[]
   favorites       Favorite[]
+  conversations   Conversation[]
   
   @@index([userId])
   @@index([categoryId])
@@ -320,4 +325,39 @@ model VehicleFeedback {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Messaging System
+model Conversation {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  
+  buyerId   String
+  buyer     User     @relation("BuyerConversations", fields: [buyerId], references: [id])
+  
+  sellerId  String
+  seller    User     @relation("SellerConversations", fields: [sellerId], references: [id])
+  
+  messages  Message[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([listingId, buyerId, sellerId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  senderId       String
+  content        String
+  isRead         Boolean      @default(false)
+  
+  createdAt      DateTime     @default(now())
+  
+  @@map("messages")
 }
