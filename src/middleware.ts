@@ -34,10 +34,10 @@ export async function middleware(request: NextRequest) {
     const subdomain = isSubdomain ? currentHost : null;
 
     // ----------------------------------------------------------------------
-    // 1. ADMIN SUBDOMAIN ROUTING (yonetim.projectnexx.com)
+    // 1. ADMIN SUBDOMAIN ROUTING (yonetim.projectnexx.com) OR /admin PATH
     // ----------------------------------------------------------------------
-    if (subdomain === "yonetim" || subdomain === "admin") {
-        // Rewrite everything to /admin path internally
+    if (subdomain === "yonetim" || subdomain === "admin" || path.startsWith("/admin")) {
+        // Rewrite everything to /admin path internally if on subdomain
         // e.g. yonetim.projectnexx.com/users -> /admin/users
 
         // IP RESTRICTION (VPN Check)
@@ -58,9 +58,14 @@ export async function middleware(request: NextRequest) {
 
         // AUTHENTICATION CHECK - require admin_session cookie
         // Allow /login page to bypass auth check
-        if (path !== "/login" && !path.startsWith("/login?")) {
+        // Also allow /admin/login explicitly
+        if (path !== "/login" && !path.startsWith("/login?") && path !== "/admin/login" && !path.startsWith("/admin/login?")) {
             const adminSession = request.cookies.get("admin_session");
             if (!adminSession) {
+                // If on main domain /admin, redirect to /admin/login
+                if (path.startsWith("/admin")) {
+                    return NextResponse.redirect(new URL("/admin/login", request.url));
+                }
                 return NextResponse.redirect(new URL("/login", request.url));
             }
         }
@@ -71,7 +76,14 @@ export async function middleware(request: NextRequest) {
             return NextResponse.next();
         }
 
-        // Rewrite the URL to the /admin folder
+        // If we are on the main domain and path starts with /admin, we don't need to rewrite
+        if (path.startsWith("/admin")) {
+            const response = NextResponse.next();
+            response.headers.set('x-subdomain', 'admin'); // Treat as admin
+            return response;
+        }
+
+        // Rewrite the URL to the /admin folder for subdomains
         // We need to handle the path correctly. 
         // If the path is just "/", it should map to "/admin"
         // If the path is "/users", it should map to "/admin/users"
@@ -79,18 +91,17 @@ export async function middleware(request: NextRequest) {
 
         // Pass the subdomain as a header for easier debugging/usage
         const response = NextResponse.rewrite(newUrl);
-        response.headers.set('x-subdomain', subdomain);
+        response.headers.set('x-subdomain', subdomain || 'admin');
         return response;
     }
 
     // ----------------------------------------------------------------------
     // 2. PREVENT DIRECT ACCESS TO /admin ON MAIN DOMAIN
     // ----------------------------------------------------------------------
-    if (path.startsWith("/admin")) {
-        // If someone tries to access projectnexx.com/admin, redirect them or show 404
-        // We want them to use yonetim.projectnexx.com
-        return NextResponse.rewrite(new URL("/404", request.url));
-    }
+    // REMOVED: We now allow /admin access on main domain for easier Vercel deployment
+    // if (path.startsWith("/admin")) {
+    //    return NextResponse.rewrite(new URL("/404", request.url));
+    // }
 
     // ----------------------------------------------------------------------
     // 3. STANDARD AUTH & PROTECTION
