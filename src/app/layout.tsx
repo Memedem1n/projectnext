@@ -7,7 +7,7 @@ import { ComparisonProvider } from "@/context/ComparisonContext";
 import { ComparisonBar } from "@/components/listing/ComparisonBar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Footer } from "@/components/layout/Footer";
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

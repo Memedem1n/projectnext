@@ -3,7 +3,7 @@
 import prisma from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { Listing, Image, Category, ListingEquipment, Equipment, DamageReport } from '@prisma/client'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache, revalidateTag, revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { decrypt } from '@/lib/auth-edge'
 
@@ -448,6 +448,9 @@ export async function createListing(data: any) {
             }
         })
 
+        revalidateTag('listings')
+        revalidatePath('/category', 'page')
+
         return {
             success: true,
             data: listing
@@ -586,6 +589,9 @@ export async function updateListing(id: string, data: any) {
             }
         })
 
+        revalidateTag('listings')
+        revalidatePath('/category', 'page')
+
         return {
             success: true,
             data: listing
@@ -648,6 +654,9 @@ export async function deleteListing(id: string) {
         await prisma.listing.delete({
             where: { id }
         })
+
+        revalidateTag('listings')
+        revalidatePath('/category', 'page')
 
         return {
             success: true
