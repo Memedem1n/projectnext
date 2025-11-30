@@ -40,7 +40,7 @@ describe('sendMessage', () => {
     });
 
     it('should return error if listing not found', async () => {
-        (getSession as any).mockResolvedValue({ userId: 'user-1' });
+        (getSession as any).mockResolvedValue({ id: 'user-1' });
         (prisma.listing.findUnique as any).mockResolvedValue(null);
 
         const result = await sendMessage('listing-1', 'Hello');
@@ -48,7 +48,7 @@ describe('sendMessage', () => {
     });
 
     it('should return error if messaging own listing', async () => {
-        (getSession as any).mockResolvedValue({ userId: 'user-1' });
+        (getSession as any).mockResolvedValue({ id: 'user-1' });
         (prisma.listing.findUnique as any).mockResolvedValue({ userId: 'user-1' });
 
         const result = await sendMessage('listing-1', 'Hello');
@@ -56,7 +56,7 @@ describe('sendMessage', () => {
     });
 
     it('should create conversation and message if valid', async () => {
-        (getSession as any).mockResolvedValue({ userId: 'buyer-1' });
+        (getSession as any).mockResolvedValue({ id: 'buyer-1' });
         (prisma.listing.findUnique as any).mockResolvedValue({ userId: 'seller-1' });
         (prisma.conversation.findUnique as any).mockResolvedValue(null);
         (prisma.conversation.create as any).mockResolvedValue({ id: 'conv-1' });
