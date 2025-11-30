@@ -1,46 +1,59 @@
 "use client";
 
-/* eslint-disable */
 import { useState, useEffect } from "react";
-import { Search, ChevronRight } from "lucide-react";
-import { CATEGORIES, Category } from "@/data/categories";
+import { Search, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCategories, searchCategories } from "@/lib/actions/categories";
+import { useDebounce } from "use-debounce";
+import { Category } from "@prisma/client";
 
 interface CategorySearchProps {
-    onSelect: (categoryId: string, subcategoryId?: string) => void;
+    onSelect: (category: Category, subcategory?: Category) => void;
 }
 
 export function CategorySearch({ onSelect }: CategorySearchProps) {
     const [query, setQuery] = useState("");
-    const [results, setResults] = useState<{ category: Category; subcategory?: Category }[]>([]);
+    const [debouncedQuery] = useDebounce(query, 300);
 
+    const [rootCategories, setRootCategories] = useState<Category[]>([]);
+    const [results, setResults] = useState<{ parent: Category | null; category: Category }[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Fetch root categories on mount
     useEffect(() => {
-        if (!query.trim()) {
-            setResults([]);
-            return;
-        }
+        const fetchRoots = async () => {
+            const res = await getCategories(null);
+            if (res.success && res.data) {
+                setRootCategories(res.data);
+            }
+        };
+        fetchRoots();
+    }, []);
 
-        const searchResults: { category: Category; subcategory?: Category }[] = [];
-        const lowerQuery = query.toLowerCase();
-
-        CATEGORIES.forEach((cat) => {
-            // Check main category
-            if (cat.name.toLowerCase().includes(lowerQuery)) {
-                searchResults.push({ category: cat });
+    // Search when query changes
+    useEffect(() => {
+        const performSearch = async () => {
+            if (!debouncedQuery.trim()) {
+                setResults([]);
+                return;
             }
 
-            // Check subcategories
-            if (cat.subcategories) {
-                cat.subcategories.forEach((sub) => {
-                    if (sub.name.toLowerCase().includes(lowerQuery)) {
-                        searchResults.push({ category: cat, subcategory: sub });
-                    }
-                });
-            }
-        });
+            setIsLoading(true);
+            const res = await searchCategories(debouncedQuery);
+            setIsLoading(false);
 
-        setResults(searchResults);
-    }, [query]);
+            if (res.success && res.data) {
+                // Transform to flat list with parent context
+                const formattedResults = res.data.map((cat: any) => ({
+                    parent: cat.parent,
+                    category: cat
+                }));
+                setResults(formattedResults);
+            }
+        };
+
+        performSearch();
+    }, [debouncedQuery]);
 
     return (
         <div className="w-full max-w-2xl mx-auto space-y-4">
@@ -54,22 +67,25 @@ export function CategorySearch({ onSelect }: CategorySearchProps) {
                     onChange={(e) => setQuery(e.target.value)}
                     autoFocus
                 />
+                {isLoading && (
+                    <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground animate-spin" />
+                )}
             </div>
 
-            {/* Show main categories when query is empty */}
-            {!query && (
+            {/* Show root categories when query is empty */}
+            {!query && rootCategories.length > 0 && (
                 <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden max-h-[400px] overflow-y-auto custom-scrollbar">
                     <div className="p-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Ana Kategoriler
                     </div>
-                    {CATEGORIES.map((cat) => (
+                    {rootCategories.map((cat) => (
                         <button
                             key={cat.id}
-                            onClick={() => onSelect(cat.id)}
+                            onClick={() => onSelect(cat)}
                             className="w-full flex items-center justify-between p-4 hover:bg-primary/10 transition-colors text-left border-b border-white/5 last:border-0 group"
                         >
                             <div className="flex items-center gap-3">
-                                {cat.icon && <cat.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />}
+                                {/* We can map icons dynamically if needed, or use a generic icon */}
                                 <div className="font-medium group-hover:text-primary transition-colors">
                                     {cat.name}
                                 </div>
@@ -80,25 +96,30 @@ export function CategorySearch({ onSelect }: CategorySearchProps) {
                 </div>
             )}
 
+            {/* Search Results */}
             {query && results.length > 0 && (
                 <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto custom-scrollbar">
                     {results.map((result, index) => (
                         <button
-                            key={`${result.category.id}-${result.subcategory?.id || "main"}-${index}`}
-                            onClick={() => onSelect(result.category.id, result.subcategory?.id)}
+                            key={`${result.category.id}-${index}`}
+                            onClick={() => onSelect(result.parent || result.category, result.parent ? result.category : undefined)}
                             className="w-full flex items-center justify-between p-4 hover:bg-primary/10 transition-colors text-left border-b border-white/5 last:border-0"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="text-muted-foreground">
-                                    {result.category.name}
-                                </div>
-                                {result.subcategory && (
+                                {result.parent ? (
                                     <>
+                                        <div className="text-muted-foreground">
+                                            {result.parent.name}
+                                        </div>
                                         <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
                                         <div className="font-medium text-primary">
-                                            {result.subcategory.name}
+                                            {result.category.name}
                                         </div>
                                     </>
+                                ) : (
+                                    <div className="font-medium text-primary">
+                                        {result.category.name}
+                                    </div>
                                 )}
                             </div>
                             <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -107,7 +128,7 @@ export function CategorySearch({ onSelect }: CategorySearchProps) {
                 </div>
             )}
 
-            {query && results.length === 0 && (
+            {query && !isLoading && results.length === 0 && (
                 <div className="text-center p-4 text-muted-foreground">
                     Sonuç bulunamadı.
                 </div>

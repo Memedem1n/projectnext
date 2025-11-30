@@ -1,15 +1,11 @@
 
-
-
 import { CheckCircle, Home, Search } from "lucide-react";
 import Link from "next/link";
-import { Navbar } from "@/components/layout/Navbar";
 import { PageBackground } from "@/components/layout/PageBackground";
 
 export default function SuccessPage() {
     return (
         <div className="min-h-screen flex flex-col">
-            <Navbar />
             <PageBackground />
 
             <main className="flex-1 flex items-center justify-center p-4 relative z-10">

@@ -72,7 +72,7 @@ export async function middleware(request: NextRequest) {
 
         // STATIC FILE ACCESS
         // Don't rewrite for secure uploads, serve them directly from public folder
-        if (path.startsWith("/secure-uploads")) {
+        if (path.startsWith("/secure-uploads") || path.startsWith("/uploads")) {
             return NextResponse.next();
         }
 

@@ -348,12 +348,17 @@ export default function PostListingPage() {
         }
     };
 
-    const handleCategorySelect = (catId: string, subId?: string) => {
-        // Map slug to ID if needed (Temporary fix for seed data mismatch)
-        const finalCatId = catId === "vasita" ? "cmil7v27a000011zxd9oy9y5p" : catId;
+    const handleCategorySelect = (category: any, subcategory?: any) => {
+        const selectedCategory = subcategory || category;
 
-        setFormData(prev => ({ ...prev, category: finalCatId, subcategory: subId || null }));
-        if (catId === "vasita") {
+        setFormData(prev => ({
+            ...prev,
+            category: selectedCategory.id, // Use the real DB ID
+            subcategory: subcategory ? subcategory.slug : null
+        }));
+
+        // Use slug for UI logic (stable across environments)
+        if (selectedCategory.slug === "vasita" || category.slug === "vasita") {
             setSubStep("hierarchy");
         } else {
             alert("Şu an sadece Vasıta kategorisi için detaylı seçim aktiftir. Diğer kategoriler yakında eklenecektir.");
@@ -409,9 +414,9 @@ export default function PostListingPage() {
                         </div>
                     </div>
 
-                    {subStep === "hierarchy" && (formData.subcategory || formData.category === "vasita") && (
+                    {subStep === "hierarchy" && formData.category && (
                         <VehicleHierarchySelector
-                            categorySlug={formData.subcategory || formData.category!}
+                            categorySlug={formData.subcategory || "vasita"}
                             onComplete={handleVehicleComplete}
                             onManualEntry={() => setSubStep("manual")}
                         />
@@ -921,20 +926,34 @@ export default function PostListingPage() {
             }
 
             // Combine with existing images and assign order
-            // We need to maintain the order as they appear in formData.images
             const finalImages = formData.images.map((img, index) => {
                 if (img instanceof File) {
-                    // This was a new file, shift from the uploaded list
                     return { url: imageUrls.shift()!.url, order: index };
                 } else {
-                    // Existing image
                     return { url: img.url, order: index };
                 }
             });
 
+            // 2. Upload Expert Reports
+            let expertReportUrls: string[] = [];
+            if (expertReports.length > 0) {
+                const reportFormData = new FormData();
+                expertReports.forEach((file) => reportFormData.append('files', file));
+
+                // Reuse the same upload function or a specific one if needed
+                // For now, using uploadListingImages as it handles generic file uploads to /api/upload
+                const uploadResult = await uploadListingImages(reportFormData);
+
+                if (!uploadResult.success || !uploadResult.urls) {
+                    throw new Error(uploadResult.error || 'Ekspertiz raporları yüklenemedi');
+                }
+                expertReportUrls = uploadResult.urls;
+            }
+
             const submissionData = {
                 ...formData,
                 images: finalImages,
+                expertReports: expertReportUrls,
                 // Ensure numeric values
                 price: parseInt(formData.price.replace(/\./g, "")),
                 km: formData.km ? parseInt(formData.km.replace(/\./g, "")) : null,
@@ -955,7 +974,7 @@ export default function PostListingPage() {
                     status: data.status,
                     description: data.description
                 })),
-                categoryId: formData.category === "vasita" ? "cmil7v27a000011zxd9oy9y5p" : formData.category
+                categoryId: formData.category
             };
 
             let result;
@@ -972,9 +991,9 @@ export default function PostListingPage() {
                 setErrors({ submit: result.error || "Bir hata oluştu" });
                 setIsSubmitting(false);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Submit error:", error);
-            setErrors({ submit: "İlan oluşturulurken bir hata oluştu." });
+            setErrors({ submit: error.message || "İlan oluşturulurken bir hata oluştu." });
             setIsSubmitting(false);
         }
     };

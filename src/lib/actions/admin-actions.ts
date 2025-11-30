@@ -67,12 +67,16 @@ export async function suspendAccount(userId: string) {
 /**
  * Verify user identity - sets identityVerified to true
  */
+/**
+ * Verify user identity - sets identityVerified to true
+ */
 export async function verifyUserIdentity(userId: string) {
     try {
         await prisma.user.update({
             where: { id: userId },
             data: {
                 identityVerified: true,
+                identityVerificationStatus: 'VERIFIED',
                 identityVerifiedAt: new Date(),
             },
         });
@@ -86,7 +90,7 @@ export async function verifyUserIdentity(userId: string) {
 }
 
 /**
- * Reject user identity - resets identityDoc and identityVerified
+ * Reject user identity - sets status to REJECTED
  */
 export async function rejectUserIdentity(userId: string, reason?: string) {
     try {
@@ -94,8 +98,8 @@ export async function rejectUserIdentity(userId: string, reason?: string) {
             where: { id: userId },
             data: {
                 identityVerified: false,
-                identityDoc: null, // Clear the document so they can upload again
-                // Optionally store rejection reason
+                identityVerificationStatus: 'REJECTED',
+                // identityDoc: null, // Keep doc for record or let user overwrite
             },
         });
 
@@ -104,5 +108,47 @@ export async function rejectUserIdentity(userId: string, reason?: string) {
     } catch (error) {
         console.error("Reject identity error:", error);
         return { success: false, error: "Kimlik reddedilirken bir hata oluştu." };
+    }
+}
+
+/**
+ * Verify corporate verification
+ */
+export async function verifyCorporate(userId: string) {
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                corporateVerified: true,
+                corporateVerificationStatus: 'VERIFIED',
+            },
+        });
+
+        revalidatePath("/admin/verifications");
+        return { success: true };
+    } catch (error) {
+        console.error("Verify corporate error:", error);
+        return { success: false, error: "Kurumsal üyelik onaylanırken bir hata oluştu." };
+    }
+}
+
+/**
+ * Reject corporate verification
+ */
+export async function rejectCorporate(userId: string, reason?: string) {
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                corporateVerified: false,
+                corporateVerificationStatus: 'REJECTED',
+            },
+        });
+
+        revalidatePath("/admin/verifications");
+        return { success: true };
+    } catch (error) {
+        console.error("Reject corporate error:", error);
+        return { success: false, error: "Kurumsal üyelik reddedilirken bir hata oluştu." };
     }
 }

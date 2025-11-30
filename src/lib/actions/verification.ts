@@ -1,114 +1,180 @@
-"use server";
+'use server';
 
-import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
-// import { generatePhoneVerificationToken } from "@/lib/tokens";
+import { getSession } from '@/lib/session';
+import prisma from '@/lib/prisma';
+import { randomInt } from 'crypto';
+import { revalidatePath } from 'next/cache';
 
-// Mock SMS Sender
-async function sendSMS(phone: string, message: string) {
-    console.log("------------------------------------------------");
-    console.log(`[SMS MOCK] To: ${phone}`);
-    console.log(`[SMS MOCK] Message: ${message}`);
-    console.log("------------------------------------------------");
-    // In production, integrate with Netgsm or Firebase here
-}
+// --- Phone Verification ---
 
-export async function sendPhoneOTP(phone: string) {
-    return { success: false, error: "Telefon doğrulama özelliği şu anda bakımda.", message: "" };
-    /*
+export async function sendPhoneOtp(phone: string) {
     try {
-        const token = await generatePhoneVerificationToken(phone);
-        await sendSMS(phone, `ProjectNexx doğrulama kodunuz: ${token.token}`);
-        return { success: true, message: "Doğrulama kodu gönderildi." };
-    } catch (error) {
-        console.error("SMS sending error:", error);
-        return { success: false, error: "SMS gönderilemedi." };
-    }
-    */
-}
-
-export async function verifyPhoneOTP(phone: string, code: string, userId: string) {
-    return { success: false, error: "Telefon doğrulama özelliği şu anda bakımda.", message: "" };
-    /*
-    try {
-        // Check if already verified
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { phoneVerified: true }
-        });
-
-        if (user?.phoneVerified) {
-            return { success: false, error: "Telefon numarası zaten doğrulanmış." };
+        const session = await getSession();
+        if (!session?.id) {
+            return { success: false, error: 'Unauthorized' };
         }
 
-        // VerificationToken model does not have 'phone' field yet.
-        // Disabling this logic until schema is updated.
-        
-        const existingToken = await prisma.verificationToken.findFirst({
-            where: {
-                // phone, // Error: phone does not exist
-                token: code
+        // Basic phone validation
+        const cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length < 10) {
+            return { success: false, error: 'Geçersiz telefon numarası' };
+        }
+
+        // Generate 6-digit OTP
+        const otp = randomInt(100000, 999999).toString();
+        const expires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+        // Store in PhoneVerificationToken
+        await prisma.phoneVerificationToken.deleteMany({
+            where: { phone: cleanPhone }
+        });
+
+        await prisma.phoneVerificationToken.create({
+            data: {
+                phone: cleanPhone,
+                token: otp,
+                expires,
             }
         });
 
-        if (!existingToken) {
-            return { success: false, error: "Geçersiz veya süresi dolmuş kod." };
+        // MOCK SMS SENDING
+        console.log('------------------------------------------------');
+        console.log(`[MOCK SMS] To: ${cleanPhone}`);
+        console.log(`[MOCK SMS] Code: ${otp}`);
+        console.log('------------------------------------------------');
+
+        const fs = require('fs');
+        try {
+            fs.appendFileSync('debug_log.txt', `[SMS OTP] ${cleanPhone}: ${otp}\n`);
+        } catch (e) {
+            // Ignore file write errors in production
         }
 
-        const hasExpired = new Date(existingToken.expires) < new Date();
-        if (hasExpired) {
-            return { success: false, error: "Kodun süresi dolmuş." };
+        return { success: true };
+    } catch (error) {
+        console.error('Error sending SMS OTP:', error);
+        return { success: false, error: 'SMS gönderilemedi' };
+    }
+}
+
+export async function verifyPhoneOtp(phone: string, code: string) {
+    try {
+        const session = await getSession();
+        if (!session?.id) {
+            return { success: false, error: 'Unauthorized' };
         }
 
+        const cleanPhone = phone.replace(/\D/g, '');
+
+        const token = await prisma.phoneVerificationToken.findFirst({
+            where: {
+                phone: cleanPhone,
+                token: code,
+                expires: { gt: new Date() }
+            }
+        });
+
+        if (!token) {
+            return { success: false, error: 'Geçersiz veya süresi dolmuş kod' };
+        }
+
+        // Update User
         await prisma.user.update({
-            where: { id: userId },
+            where: { id: session.id },
             data: {
+                phone: cleanPhone,
                 phoneVerified: true,
                 phoneVerifiedAt: new Date(),
-                phone: phone // Update phone in case it was changed/added
             }
         });
 
-        await prisma.verificationToken.delete({
-            where: { id: existingToken.id }
+        // Delete used token
+        await prisma.phoneVerificationToken.delete({
+            where: { id: token.id }
         });
 
-        revalidatePath("/dashboard");
-        return { success: true, message: "Telefon numarası başarıyla doğrulandı." };
-
+        revalidatePath('/dashboard/verification');
+        return { success: true };
     } catch (error) {
-        console.error("Phone verification error:", error);
-        return { success: false, error: "Doğrulama sırasında bir hata oluştu." };
+        console.error('Error verifying phone:', error);
+        return { success: false, error: 'Doğrulama başarısız' };
     }
-    */
 }
 
-export async function verifySellerStatus(userId: string) {
-    // Placeholder for seller verification logic
-    return { success: true };
+// --- Identity Verification ---
+
+export async function submitIdentityVerification(formData: FormData) {
+    try {
+        const session = await getSession();
+        if (!session?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const tcNo = formData.get('tcNo') as string;
+        const docUrl = formData.get('docUrl') as string;
+
+        if (!tcNo || tcNo.length !== 11) {
+            return { success: false, error: 'Geçersiz TC Kimlik No' };
+        }
+
+        if (!docUrl) {
+            return { success: false, error: 'Kimlik fotoğrafı yüklenmelidir' };
+        }
+
+        // Update User
+        await prisma.user.update({
+            where: { id: session.id },
+            data: {
+                tcIdentityNo: tcNo,
+                identityDoc: docUrl,
+                identityVerificationStatus: 'PENDING', // Waiting for admin
+            }
+        });
+
+        revalidatePath('/dashboard/verification');
+        return { success: true };
+    } catch (error) {
+        console.error('Error submitting identity:', error);
+        return { success: false, error: 'Başvuru gönderilemedi' };
+    }
 }
 
-export async function uploadIdentityDocument(formData: FormData) {
-    return { success: false, error: "Bu özellik şu anda aktif değil.", message: "" };
-}
+// --- Corporate Verification ---
 
-export async function requestBadge(userId: string) {
-    return { success: false, error: "Bu özellik şu anda aktif değil.", message: "" };
-}
+export async function submitCorporateVerification(formData: FormData) {
+    try {
+        const session = await getSession();
+        if (!session?.id) {
+            return { success: false, error: 'Unauthorized' };
+        }
 
-// Admin Actions
-export async function approveIdentity(verificationId: string) {
-    return { success: false, error: "Bu özellik şu anda aktif değil.", message: "" };
-}
+        const taxNumber = formData.get('taxNumber') as string;
+        const taxOffice = formData.get('taxOffice') as string;
+        const taxPlateDoc = formData.get('taxPlateDoc') as string;
+        const companyRegistryNo = formData.get('companyRegistryNo') as string;
+        const companyEstablishmentDoc = formData.get('companyEstablishmentDoc') as string;
 
-export async function rejectIdentity(verificationId: string, reason: string) {
-    return { success: false, error: "Bu özellik şu anda aktif değil.", message: "" };
-}
+        if (!taxNumber || !taxOffice || !taxPlateDoc || !companyRegistryNo || !companyEstablishmentDoc) {
+            return { success: false, error: 'Tüm alanlar zorunludur' };
+        }
 
-export async function approveBadge(requestId: string) {
-    return { success: false, error: "Bu özellik şu anda aktif değil.", message: "" };
-}
+        // Update User
+        await prisma.user.update({
+            where: { id: session.id },
+            data: {
+                taxNumber,
+                taxOffice,
+                taxPlateDoc,
+                companyRegistryNo,
+                companyEstablishmentDoc,
+                corporateVerificationStatus: 'PENDING',
+            }
+        });
 
-export async function rejectBadge(requestId: string, reason: string) {
-    return { success: false, error: "Bu özellik şu anda aktif değil." };
+        revalidatePath('/dashboard/verification');
+        return { success: true };
+    } catch (error) {
+        console.error('Error submitting corporate:', error);
+        return { success: false, error: 'Başvuru gönderilemedi' };
+    }
 }

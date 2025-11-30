@@ -1,14 +1,44 @@
-import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
+import { getSession } from '@/lib/session';
+import { redirect } from 'next/navigation';
+import prisma from '@/lib/prisma';
+import { VerificationContainer } from '@/components/dashboard/verification/VerificationContainer';
 
 export default async function VerificationPage() {
     const session = await getSession();
-    if (!session) redirect("/login");
+    if (!session?.id) {
+        redirect('/login');
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: session.id },
+        select: {
+            id: true,
+            role: true,
+            phone: true,
+            phoneVerified: true,
+            identityVerified: true,
+            identityVerificationStatus: true,
+            corporateVerified: true,
+            corporateVerificationStatus: true,
+        }
+    });
+
+    if (!user) {
+        redirect('/login');
+    }
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-            <h1 className="text-2xl font-bold text-white mb-2">Hesap Doğrulama</h1>
-            <p className="text-gray-400">Bu özellik henüz geliştirme aşamasındadır.</p>
+        <div className="space-y-8">
+            <div>
+                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                    Doğrulama Merkezi
+                </h1>
+                <p className="text-gray-400 mt-2">
+                    Hesabınızı doğrulayarak güvenilirliğinizi artırın ve daha fazla özelliğe erişin.
+                </p>
+            </div>
+
+            <VerificationContainer user={user} />
         </div>
     );
 }

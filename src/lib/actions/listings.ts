@@ -104,6 +104,8 @@ export async function getListings(params?: {
         }
 
         const where: Prisma.ListingWhereInput = {
+            status: 'ACTIVE',
+            isActive: true,
             ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
             ...(search && {
                 OR: [
@@ -395,7 +397,13 @@ export async function createListing(data: any) {
                 isActive: false,   // Default active state
 
                 // New Fields
-                expertReports: data.expertReports || [],
+                expertReports: (() => {
+                    const reports = data.expertReports || [];
+                    if (reports.length > 10) {
+                        throw new Error('En fazla 10 adet ekspertiz raporu yüklenebilir.');
+                    }
+                    return reports;
+                })(),
                 contactPreference: data.contactPreference || "both",
 
                 // Vehicle Details
@@ -455,11 +463,11 @@ export async function createListing(data: any) {
             success: true,
             data: listing
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating listing:', error)
         return {
             success: false,
-            error: 'Failed to create listing'
+            error: error.message || 'Failed to create listing'
         }
 
     }
@@ -552,7 +560,13 @@ export async function updateListing(id: string, data: any) {
                 district: data.district,
 
                 // New Fields
-                expertReports: data.expertReports || [],
+                expertReports: (() => {
+                    const reports = data.expertReports || [];
+                    if (reports.length > 10) {
+                        throw new Error('En fazla 10 adet ekspertiz raporu yüklenebilir.');
+                    }
+                    return reports;
+                })(),
                 contactPreference: data.contactPreference || "both",
                 listingPackage: data.listingPackage,
 

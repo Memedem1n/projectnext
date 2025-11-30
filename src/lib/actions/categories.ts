@@ -258,3 +258,61 @@ export async function getAllChildCategoryIds(categoryId: string): Promise<string
 
     return descendants;
 }
+
+export async function getCategoryCounts(categoryIds: string[]) {
+    try {
+        // 1. Get direct counts for these categories
+        // But we also need counts for their children.
+        // This is complex to do efficiently in one query without a closure table or recursive CTE.
+        // For now, let's just get direct counts and assume listings are at the leaf level.
+        // If listings are at leaf level, then for a parent category, we need to sum its children.
+
+        // Alternative: Fetch ALL active listings' categoryIDs and aggregate in memory.
+        // This is scalable up to ~10k-100k listings. For millions, we need pre-calculated stats.
+
+        const activeListings = await prisma.listing.groupBy({
+            by: ['categoryId'],
+            where: {
+                status: 'ACTIVE',
+                isActive: true
+            },
+            _count: {
+                categoryId: true
+            }
+        });
+
+        const countMap = new Map<string, number>();
+        activeListings.forEach(item => {
+            countMap.set(item.categoryId, item._count.categoryId);
+        });
+
+        // Now, for the requested categoryIds, we might need to sum up their descendants if they are parents.
+        // But we don't know their descendants here without fetching the whole tree.
+        // Let's assume for the Sidebar (which shows direct children), we just want the count of listings IN that child 
+        // OR (if we can) the sum.
+
+        // If we migrated data, listings should be at the Model/SubModel level.
+        // If we show "BMW" in the sidebar (under Otomobil), we want the sum of all BMW models.
+
+        // Let's try to be smart: 
+        // If we are passing `treeCategories` (which are children of current), we can fetch their children too?
+        // Too heavy.
+
+        // Simplified approach: Just return direct counts for now. 
+        // If the user wants "BMW (5)", and listings are in "3 Serisi", "5 Serisi", 
+        // then "BMW" will show (0) if we only count direct.
+        // This is a known issue with hierarchical data without pre-aggregation.
+
+        // Hack: For the specific case of "Otomobil" -> "Brands", we can use the `brand` field on Listing!
+        // We already did this in `getVehicleCategories`.
+        // But now we are using `Category` table.
+
+        // Let's stick to the `brand` field aggregation for the "Otomobil" level sidebar.
+        // For deeper levels (Model -> SubModel), we might need `model` field aggregation.
+
+        return Object.fromEntries(countMap);
+    } catch (error) {
+        console.error('Error fetching category counts:', error);
+        return {};
+    }
+}

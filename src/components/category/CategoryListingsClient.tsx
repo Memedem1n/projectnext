@@ -23,18 +23,7 @@ export function CategoryListingsClient({
     viewMode
 }: CategoryListingsClientProps) {
 
-    if (isMainCategory) {
-        return (
-            <div className="glass-card p-12 text-center">
-                <p className="text-xl font-semibold text-muted-foreground mb-4">
-                    Lütfen sol taraftan bir alt kategori seçin
-                </p>
-                <p className="text-sm text-muted-foreground">
-                    Alt kategorilerde ilanları görebilirsiniz
-                </p>
-            </div>
-        );
-    }
+
 
     if (listings.length === 0) {
         return (

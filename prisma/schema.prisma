@@ -38,7 +38,22 @@ model User {
   identityDoc   String?   // URL to identity document
   identityVerified Boolean @default(false)
   identityVerifiedAt DateTime?
+  identityVerificationStatus String @default("NOT_STARTED") // NOT_STARTED, PENDING, VERIFIED, REJECTED
+  
+  // Corporate Verification
+  taxNumber     String?
+  taxOffice     String?
+  taxPlateDoc   String?
+  companyRegistryNo String? // Sicil Numarası
+  companyEstablishmentDoc String? // Kuruluş Evrakları (Sicil Gazetesi vb.)
+  corporateVerified Boolean @default(false)
+  corporateVerificationStatus String @default("NOT_STARTED")
+
   twoFactorEnabled Boolean @default(false)
+  
+  // Profile & Settings
+  bio                   String?
+  notificationPreferences Json?   // Stores email toggle states
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
