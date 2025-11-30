@@ -1,27 +1,12 @@
 import prisma from '@/lib/prisma'
 import { Car, Users, Clock, CheckCircle } from 'lucide-react'
 
-async function getStats() {
-    const [totalListings, totalUsers] = await Promise.all([
+export default async function AdminDashboard() {
+    const [totalListings, pendingListings, totalUsers] = await Promise.all([
         prisma.listing.count(),
+        prisma.listing.count({ where: { status: 'PENDING' } }),
         prisma.user.count()
     ])
-
-    return {
-        totalListings,
-        pendingListings: 0, // Placeholder as we don't have status field yet
-        totalUsers
-    }
-}
-
-export default async function AdminDashboard() {
-    // We might need to handle the case where 'status' field doesn't exist yet on Listing model
-    // For now, let's assume it doesn't and just show total counts
-    const totalListings = await prisma.listing.count()
-    const totalUsers = await prisma.user.count()
-
-    // Placeholder for pending until we add status field
-    const pendingListings = 0
 
     const stats = [
         {
@@ -47,7 +32,7 @@ export default async function AdminDashboard() {
         },
         {
             name: 'Aktif İlanlar',
-            value: totalListings - pendingListings,
+            value: totalListings - pendingListings, // This is an approximation, better to query ACTIVE specifically if needed
             icon: CheckCircle,
             color: 'text-purple-400',
             bg: 'bg-purple-400/10'

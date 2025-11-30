@@ -331,7 +331,7 @@ export async function checkFreeListingEligibility(categoryId: string) {
         if (!sessionCookie) return { eligible: false }
 
         const session = await decrypt(sessionCookie.value)
-        const userId = session?.userId as string
+        const userId = session?.id as string
 
         if (!userId) return { eligible: false }
 
@@ -360,6 +360,7 @@ export async function checkFreeListingEligibility(categoryId: string) {
 }
 
 export async function createListing(data: any) {
+    console.log('[DEBUG] createListing received data:', JSON.stringify(data, null, 2));
     try {
         const cookieStore = await cookies()
         const sessionCookie = cookieStore.get('session')
@@ -372,7 +373,8 @@ export async function createListing(data: any) {
         }
 
         const session = await decrypt(sessionCookie.value)
-        const userId = session?.userId as string
+        console.log('[DEBUG] createListing session:', JSON.stringify(session, null, 2))
+        const userId = session?.id as string
 
         if (!userId) {
             return {
@@ -456,8 +458,148 @@ export async function createListing(data: any) {
             success: false,
             error: 'Failed to create listing'
         }
+
     }
 }
+
+export async function updateListing(id: string, data: any) {
+    try {
+        const cookieStore = await cookies()
+        const sessionCookie = cookieStore.get('session')
+
+        if (!sessionCookie) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        const session = await decrypt(sessionCookie.value)
+        const userId = session?.id as string
+
+        if (!userId) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        // Check ownership
+        const existingListing = await prisma.listing.findUnique({
+            where: { id },
+            select: { userId: true }
+        })
+
+        if (!existingListing) {
+            return {
+                success: false,
+                error: 'Listing not found'
+            }
+        }
+
+        if (existingListing.userId !== userId) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        // Prepare Damage Report updates
+        // First delete existing reports, then create new ones (simplest approach for full update)
+        // Or we can use deleteMany and create
+
+        // Transaction might be better but for now let's do sequential operations or nested update
+
+        // 1. Upload Listing Images (Handled in frontend, we get URLs here)
+        // data.images is array of { url, order, isCover }
+
+        // Update listing
+        const listing = await prisma.listing.update({
+            where: { id },
+            data: {
+                title: data.title,
+                description: data.description,
+                price: parseInt(data.price),
+                categoryId: data.categoryId,
+
+                // Reset status to PENDING for re-approval
+                status: 'PENDING',
+                isActive: false,
+                rejectionReason: null, // Clear any previous rejection
+
+                // Vehicle Details
+                brand: data.brand,
+                model: data.model,
+                year: data.year ? parseInt(data.year) : null,
+                km: data.km ? parseInt(data.km) : null,
+                color: data.color,
+                fuel: data.fuel,
+                gear: data.gear,
+                caseType: data.caseType,
+                version: data.version,
+                package: data.package,
+
+                // Status
+                warranty: data.warranty || false,
+                exchange: data.exchange || false,
+                tramer: data.tramer,
+
+                // Location
+                city: data.city,
+                district: data.district,
+
+                // New Fields
+                expertReports: data.expertReports || [],
+                contactPreference: data.contactPreference || "both",
+                listingPackage: data.listingPackage,
+
+                // Relations - Images
+                // Delete all existing images and recreate (simplest for reordering)
+                images: {
+                    deleteMany: {},
+                    create: data.images.map((img: any, index: number) => ({
+                        url: img.url,
+                        order: img.order ?? index,
+                        isCover: (img.order ?? index) === 0
+                    }))
+                },
+
+                // Equipment
+                equipment: {
+                    deleteMany: {},
+                    create: data.equipmentIds?.map((equipmentId: string) => ({
+                        equipment: {
+                            connect: { id: equipmentId }
+                        }
+                    })) || []
+                },
+
+                // Damage Report
+                damage: {
+                    deleteMany: {},
+                    create: data.damageReports?.map((item: any) => ({
+                        part: item.part,
+                        status: item.status,
+                        description: item.description
+                    })) || []
+                }
+            }
+        })
+
+        return {
+            success: true,
+            data: listing
+        }
+    } catch (error) {
+        console.error('Error updating listing:', error)
+        return {
+            success: false,
+            error: 'Failed to update listing'
+        }
+    }
+}
+
+
 
 export async function deleteListing(id: string) {
     try {
@@ -472,7 +614,7 @@ export async function deleteListing(id: string) {
         }
 
         const session = await decrypt(sessionCookie.value)
-        const userId = session?.userId as string
+        const userId = session?.id as string
 
         if (!userId) {
             return {

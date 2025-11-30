@@ -169,6 +169,7 @@ model Listing {
   // New Fields
   expertReports     String[]   // URLs to expert report files (PDF/Image)
   contactPreference String     @default("both") // "call", "message", "both"
+  listingPackage    String?    @default("standard") // "standard", "gold", "premium"
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt()

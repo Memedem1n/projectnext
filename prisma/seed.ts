@@ -57,6 +57,62 @@ async function main() {
         }
     })
 
+    // Create Equipment
+    const equipmentData = [
+        {
+            id: "safety",
+            title: "Güvenlik",
+            items: [
+                "ABS", "ESP", "ASR", "EBD", "Yokuş Kalkış Desteği",
+                "Hava Yastığı (Sürücü)", "Hava Yastığı (Yolcu)", "Hava Yastığı (Yan)", "Hava Yastığı (Perde)",
+                "Lastik Basınç Sensörü", "Merkezi Kilit", "Çocuk Kilidi", "İsofix"
+            ]
+        },
+        {
+            id: "interior",
+            title: "İç Donanım",
+            items: [
+                "Deri Koltuk", "Kumaş Koltuk", "Elektrikli Camlar", "Klima (Analog)", "Klima (Dijital)",
+                "Hız Sabitleyici", "Yol Bilgisayarı", "Start / Stop", "Anahtarsız Giriş ve Çalıştırma",
+                "Deri Direksiyon", "Isıtmalı Koltuklar", "Sunroof", "Panoramik Cam Tavan"
+            ]
+        },
+        {
+            id: "exterior",
+            title: "Dış Donanım",
+            items: [
+                "Alaşımlı Jant", "Çelik Jant", "Sis Farı", "LED Farlar", "Xenon Farlar",
+                "Park Sensörü (Arka)", "Park Sensörü (Ön)", "Geri Görüş Kamerası",
+                "Otomatik Katlanır Aynalar", "Yağmur Sensörü", "Far Sensörü"
+            ]
+        },
+        {
+            id: "multimedia",
+            title: "Multimedya",
+            items: [
+                "Radyo - CD Çalar", "Bluetooth", "USB / AUX", "Navigasyon",
+                "Apple CarPlay", "Android Auto", "Ses Sistemi", "Dokunmatik Ekran"
+            ]
+        }
+    ];
+
+    console.log('🌱 Seeding equipment...');
+    for (const section of equipmentData) {
+        for (const item of section.items) {
+            // Check if exists first to avoid duplicates if re-running without delete
+            const exists = await prisma.equipment.findUnique({ where: { name: item } });
+            if (!exists) {
+                await prisma.equipment.create({
+                    data: {
+                        id: item, // Use name as ID for simplicity with frontend
+                        name: item,
+                        category: section.title
+                    }
+                });
+            }
+        }
+    }
+
     console.log(`✅ Created listing: ${listing.id}`)
     console.log('✅ Seed completed successfully!')
 }

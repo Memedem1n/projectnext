@@ -38,40 +38,58 @@ export default async function AdminUsersPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/10">
-                            {users.map((user: any) => (
-                                <tr key={user.id} className="hover:bg-white/5 transition-colors">
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-bold">
-                                                {user.name?.charAt(0).toUpperCase() || '?'}
+                            {users.map((user: any) => {
+                                const roleMap: Record<string, string> = {
+                                    INDIVIDUAL: 'Bireysel',
+                                    CORPORATE_GALLERY: 'Galeri',
+                                    CORPORATE_DEALER: 'Bayi',
+                                    ADMIN: 'Yönetici'
+                                };
+
+                                const statusMap: Record<string, { label: string; class: string }> = {
+                                    ACTIVE: { label: 'Aktif', class: 'bg-green-500/10 text-green-400 border-green-500/20' },
+                                    PENDING: { label: 'Onay Bekliyor', class: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
+                                    SUSPENDED: { label: 'Askıda', class: 'bg-red-500/10 text-red-400 border-red-500/20' },
+                                    REJECTED: { label: 'Reddedildi', class: 'bg-red-500/10 text-red-400 border-red-500/20' }
+                                };
+
+                                const status = statusMap[user.status] || { label: user.status, class: 'bg-gray-500/10 text-gray-400 border-gray-500/20' };
+
+                                return (
+                                    <tr key={user.id} className="hover:bg-white/5 transition-colors">
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-bold">
+                                                    {user.name?.charAt(0).toUpperCase() || '?'}
+                                                </div>
+                                                <div>
+                                                    <div className="font-medium text-white">{user.name || 'İsimsiz'}</div>
+                                                    <div className="text-xs text-gray-500">{user.email}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="font-medium text-white">{user.name || 'İsimsiz'}</div>
-                                                <div className="text-xs text-gray-500">{user.email}</div>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2">
+                                                <User className="w-4 h-4 text-gray-400" />
+                                                <span className="text-sm text-gray-300 capitalize">
+                                                    {roleMap[user.role] || user.role}
+                                                </span>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-2">
-                                            <User className="w-4 h-4 text-gray-400" />
-                                            <span className="text-sm text-gray-300 capitalize">
-                                                Standart
+                                        </td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${status.class}`}>
+                                                {status.label}
                                             </span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4">
-                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
-                                            Aktif
-                                        </span>
-                                    </td>
-                                    <td className="p-4 text-white font-medium">
-                                        {user._count.listings}
-                                    </td>
-                                    <td className="p-4 text-gray-400 text-sm">
-                                        {formatDate(user.createdAt)}
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="p-4 text-white font-medium">
+                                            {user._count.listings}
+                                        </td>
+                                        <td className="p-4 text-gray-400 text-sm">
+                                            {formatDate(user.createdAt)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

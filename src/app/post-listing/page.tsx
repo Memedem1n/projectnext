@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronRight, ChevronLeft, Upload, Check, AlertTriangle, Car, FileText, Shield, Settings, CreditCard, ShieldCheck, RefreshCw, Loader2, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronLeft, Upload, Check, AlertTriangle, Car, FileText, Shield, Settings, CreditCard, ShieldCheck, RefreshCw, Loader2, ChevronDown, Eye } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Navbar } from "@/components/layout/Navbar";
+
 import { PageBackground } from "@/components/layout/PageBackground";
 import { CategorySearch } from "@/components/listing/CategorySearch";
 import { CATEGORIES } from "@/data/categories";
@@ -11,12 +11,13 @@ import { VehicleHierarchySelector } from "@/components/listing/VehicleHierarchyS
 import { CarDamageSelector } from "@/components/listing/CarDamageSelector";
 import { EquipmentSelector } from "@/components/listing/EquipmentSelector";
 import { ImageUploadStep } from "@/components/listing/ImageUploadStep";
+import { ListingPreview } from "@/components/listing/ListingPreview";
 import { ListingPackages, type PackageType } from "@/components/listing/ListingPackages";
-import { createListing } from "@/lib/actions/listings";
+import { createListing, getListingById, updateListing } from "@/lib/actions/listings";
 import { uploadListingImages } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
-type Step = "category" | "details" | "condition" | "features" | "images" | "finish";
+type Step = "category" | "details" | "condition" | "features" | "images" | "preview" | "finish";
 
 const COLORS = [
     { value: "beyaz", label: "Beyaz", hex: "#ffffff" },
@@ -37,6 +38,11 @@ export default function PostListingPage() {
     const [currentStep, setCurrentStep] = useState<Step>("category");
     const [subStep, setSubStep] = useState<"search" | "hierarchy" | "manual">("search");
     const [isColorOpen, setIsColorOpen] = useState(false);
+    const [expertReports, setExpertReports] = useState<File[]>([]);
+    const [checkingEligibility, setCheckingEligibility] = useState(false);
+    const [isEligibleForFree, setIsEligibleForFree] = useState<boolean | null>(null);
+    const [showDraftDialog, setShowDraftDialog] = useState(false);
+    const [draftData, setDraftData] = useState<any>(null);
 
     useEffect(() => {
         const step = searchParams.get("step") as Step;
@@ -44,6 +50,8 @@ export default function PostListingPage() {
             setCurrentStep(step);
         }
     }, [searchParams]);
+
+
 
     const [formData, setFormData] = useState({
         // Category & Vehicle
@@ -79,12 +87,118 @@ export default function PostListingPage() {
 
         // Features
         equipment: [] as string[],
-        images: [] as File[],
+        images: [] as (File | { url: string; name?: string })[],
 
         // Finish
         contactPreference: "both" as "call" | "message" | "both",
         listingPackage: "standard" as PackageType,
     });
+
+    const [isLoading, setIsLoading] = useState(false);
+    const listingId = searchParams.get("edit");
+    const isEditing = !!listingId;
+
+    // Fetch listing data if editing
+    useEffect(() => {
+        const fetchListing = async () => {
+            if (!listingId) return;
+
+            setIsLoading(true);
+            try {
+                const result = await getListingById(listingId);
+                if (result.success && result.data) {
+                    const l = result.data;
+
+                    // Map existing data to form
+                    setFormData(prev => ({
+                        ...prev,
+                        category: l.categoryId,
+                        subcategory: null, // Can't easily infer without hierarchy traversal, but categoryId is enough for submission
+
+                        vehicle: {
+                            brand: l.brand,
+                            model: l.model,
+                            year: l.year?.toString() || null,
+                            fuel: l.fuel,
+                            caseType: l.caseType,
+                            gear: l.gear,
+                            version: l.version,
+                            package: l.package,
+                        },
+
+                        title: l.title,
+                        description: l.description || "",
+                        price: l.price.toString(),
+                        km: l.km?.toString() || "",
+                        color: l.color || "",
+                        warranty: l.warranty,
+                        exchange: l.exchange,
+                        plate: "", // Don't populate plate for privacy/security or if not returned
+                        trPlate: true,
+                        location: "", // City/District logic needed if stored separately
+
+                        damageReport: l.damage.reduce((acc: any, curr: any) => ({
+                            ...acc,
+                            [curr.part]: { status: curr.status, description: curr.description }
+                        }), {}),
+
+                        tramer: l.tramer || "",
+                        expertReport: null, // Can't populate File object
+
+                        equipment: l.equipment.map((e: any) => e.equipmentId),
+
+                        images: l.images.map((img: any) => ({
+                            url: img.url,
+                            name: `Resim ${img.order + 1}`
+                        })),
+
+                        contactPreference: l.contactPreference as any,
+                        listingPackage: (l as any).listingPackage || "standard",
+                    }));
+
+                    // Skip to details step if we have data
+                    if (currentStep === "category") {
+                        setCurrentStep("details");
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching listing:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchListing();
+        fetchListing();
+    }, [listingId]);
+
+
+
+    const handleResumeDraft = () => {
+        if (draftData) {
+            setFormData(prev => ({
+                ...prev,
+                ...draftData.formData,
+                // Restore complex objects if needed, but basic spread covers most
+                // Images and files are lost as they can't be in localStorage
+            }));
+            setCurrentStep(draftData.step);
+            setShowDraftDialog(false);
+        }
+    };
+
+    const handleDiscardDraft = () => {
+        localStorage.removeItem("listing_draft");
+        setShowDraftDialog(false);
+        setDraftData(null);
+    };
+
+    // Redirect to start if state is lost (e.g. page refresh)
+    useEffect(() => {
+        if (currentStep !== "category" && !formData.category) {
+            router.replace("/post-listing");
+        }
+    }, [currentStep, formData.category, router]);
 
     const steps = [
         { id: "category", title: "Kategori", icon: Car },
@@ -92,11 +206,55 @@ export default function PostListingPage() {
         { id: "condition", title: "Durum", icon: Shield },
         { id: "features", title: "Özellikler", icon: Settings },
         { id: "images", title: "Fotoğraflar", icon: Upload },
+        { id: "preview", title: "Önizleme", icon: Eye },
         { id: "finish", title: "Yayınla", icon: CreditCard },
     ];
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Draft System Logic
+    useEffect(() => {
+        // Don't save if editing an existing listing or if submitting
+        if (isEditing || isSubmitting) return;
+
+        const saveDraft = () => {
+            const draft = {
+                step: currentStep,
+                formData: {
+                    ...formData,
+                    // Don't save files directly to localStorage
+                    images: [],
+                    expertReport: null
+                },
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem("listing_draft", JSON.stringify(draft));
+        };
+
+        // Debounce save
+        const timeoutId = setTimeout(saveDraft, 1000);
+        return () => clearTimeout(timeoutId);
+    }, [formData, currentStep, isEditing, isSubmitting]);
+
+    useEffect(() => {
+        // Check for draft on mount
+        if (!isEditing) {
+            const savedDraft = localStorage.getItem("listing_draft");
+            if (savedDraft) {
+                try {
+                    const parsed = JSON.parse(savedDraft);
+                    // Only show if there's meaningful data (e.g. category selected)
+                    if (parsed.formData.category) {
+                        setDraftData(parsed);
+                        setShowDraftDialog(true);
+                    }
+                } catch (e) {
+                    console.error("Error parsing draft:", e);
+                }
+            }
+        }
+    }, [isEditing]);
 
     const validateDetails = () => {
         const newErrors: Record<string, string> = {};
@@ -110,18 +268,55 @@ export default function PostListingPage() {
     };
 
     const validateImages = () => {
-        // MOCK: Allow empty images for automation
-        /*
         if (formData.images.length === 0) {
             setErrors({ images: "En az 1 fotoğraf yüklemelisiniz" });
             return false;
         }
-        */
-        setErrors({});
+        return true;
+    };
+
+    const handleExpertReportUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            // Validate: Max 10 files, Max 5MB each
+            const validFiles = files.filter(file => {
+                const isSizeValid = file.size <= 5 * 1024 * 1024; // 5MB
+                const isTypeValid = file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf') || file.type.startsWith("image/");
+                return isSizeValid && isTypeValid;
+            });
+
+            if (validFiles.length + expertReports.length > 10) {
+                alert("En fazla 10 adet rapor yükleyebilirsiniz.");
+                return;
+            }
+
+            setExpertReports(prev => [...prev, ...validFiles]);
+        }
+    };
+
+    const removeExpertReport = (index: number) => {
+        setExpertReports(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const validateCategory = () => {
+        if (!formData.category) {
+            alert("Lütfen bir kategori seçiniz.");
+            return false;
+        }
+        if (formData.category === "vasita" && !formData.vehicle.model) {
+            alert("Lütfen araç modelini seçiniz.");
+            return false;
+        }
         return true;
     };
 
     const handleNext = () => {
+        if (currentStep === "category") {
+            if (!validateCategory()) {
+                return;
+            }
+        }
+
         if (currentStep === "details") {
             if (!validateDetails()) {
                 window.scrollTo(0, 0);
@@ -154,7 +349,10 @@ export default function PostListingPage() {
     };
 
     const handleCategorySelect = (catId: string, subId?: string) => {
-        setFormData(prev => ({ ...prev, category: catId, subcategory: subId || null }));
+        // Map slug to ID if needed (Temporary fix for seed data mismatch)
+        const finalCatId = catId === "vasita" ? "cmil7v27a000011zxd9oy9y5p" : catId;
+
+        setFormData(prev => ({ ...prev, category: finalCatId, subcategory: subId || null }));
         if (catId === "vasita") {
             setSubStep("hierarchy");
         } else {
@@ -169,7 +367,11 @@ export default function PostListingPage() {
             caseType: selection.bodyType || selection.caseType
         };
         setFormData(prev => ({ ...prev, vehicle: vehicleData }));
-        handleNext();
+
+        // Automatically move to next step
+        const currentIndex = steps.findIndex(s => s.id === "category");
+        const nextStep = steps[currentIndex + 1].id;
+        router.push(`/post-listing?step=${nextStep}`);
     };
 
     const renderCategoryStep = () => (
@@ -238,6 +440,38 @@ export default function PostListingPage() {
         </div>
     );
 
+    if (showDraftDialog) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-6">
+                    <div className="text-center space-y-2">
+                        <div className="w-12 h-12 rounded-full bg-brand-gold/20 text-brand-gold flex items-center justify-center mx-auto">
+                            <FileText className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-xl font-bold">Taslak Bulundu</h3>
+                        <p className="text-muted-foreground">
+                            Daha önce yarım bıraktığınız bir ilan girişi bulundu. Kaldığınız yerden devam etmek ister misiniz?
+                        </p>
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleDiscardDraft}
+                            className="flex-1 py-3 px-4 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-medium"
+                        >
+                            Sil ve Yeni Başla
+                        </button>
+                        <button
+                            onClick={handleResumeDraft}
+                            className="flex-1 py-3 px-4 rounded-xl bg-brand-gold text-primary-foreground hover:bg-brand-gold/90 transition-colors font-bold"
+                        >
+                            Devam Et
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     const renderDetailsStep = () => (
         <div className="max-w-3xl mx-auto space-y-8">
             <div className="glass-card p-8 space-y-6">
@@ -258,8 +492,9 @@ export default function PostListingPage() {
                             placeholder="Örn: ProjectNexx Temiz 2020 Model BMW 320i"
                             value={formData.title}
                             onChange={e => {
-                                setFormData({ ...formData, title: e.target.value });
-                                if (errors.title) setErrors({ ...errors, title: "" });
+                                const val = e.target.value;
+                                setFormData(prev => ({ ...prev, title: val }));
+                                if (errors.title) setErrors(prev => ({ ...prev, title: "" }));
                             }}
                         />
                         {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
@@ -275,7 +510,10 @@ export default function PostListingPage() {
                             className="w-full bg-black/20 border border-white/10 rounded-xl p-4 focus:border-brand-gold focus:ring-0"
                             placeholder="Aracınızın detaylarını buraya yazın..."
                             value={formData.description}
-                            onChange={e => setFormData({ ...formData, description: e.target.value })}
+                            onChange={e => {
+                                const val = e.target.value;
+                                setFormData(prev => ({ ...prev, description: val }));
+                            }}
                         />
                     </div>
 
@@ -293,8 +531,8 @@ export default function PostListingPage() {
                                 onChange={e => {
                                     const rawValue = e.target.value.replace(/\D/g, "");
                                     const formatted = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                                    setFormData({ ...formData, price: formatted });
-                                    if (errors.price) setErrors({ ...errors, price: "" });
+                                    setFormData(prev => ({ ...prev, price: formatted }));
+                                    if (errors.price) setErrors(prev => ({ ...prev, price: "" }));
                                 }}
                             />
                             {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
@@ -312,8 +550,8 @@ export default function PostListingPage() {
                                 onChange={e => {
                                     const rawValue = e.target.value.replace(/\D/g, "");
                                     const formatted = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                                    setFormData({ ...formData, km: formatted });
-                                    if (errors.km) setErrors({ ...errors, km: "" });
+                                    setFormData(prev => ({ ...prev, km: formatted }));
+                                    if (errors.km) setErrors(prev => ({ ...prev, km: "" }));
                                 }}
                             />
                             {errors.km && <p className="text-xs text-red-500 mt-1">{errors.km}</p>}
@@ -351,8 +589,8 @@ export default function PostListingPage() {
                                         <button
                                             key={color.value}
                                             onClick={() => {
-                                                setFormData({ ...formData, color: color.value });
-                                                if (errors.color) setErrors({ ...errors, color: "" });
+                                                setFormData(prev => ({ ...prev, color: color.value }));
+                                                if (errors.color) setErrors(prev => ({ ...prev, color: "" }));
                                                 setIsColorOpen(false);
                                             }}
                                             className="w-full p-3 flex items-center gap-3 hover:bg-white/10 transition-colors text-left"
@@ -372,7 +610,7 @@ export default function PostListingPage() {
 
                         <div className="flex items-center gap-4">
                             <button
-                                onClick={() => setFormData({ ...formData, warranty: !formData.warranty })}
+                                onClick={() => setFormData(prev => ({ ...prev, warranty: !prev.warranty }))}
                                 className={cn(
                                     "flex-1 p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group relative overflow-hidden h-[58px]",
                                     formData.warranty
@@ -397,7 +635,7 @@ export default function PostListingPage() {
                             </button>
 
                             <button
-                                onClick={() => setFormData({ ...formData, exchange: !formData.exchange })}
+                                onClick={() => setFormData(prev => ({ ...prev, exchange: !prev.exchange }))}
                                 className={cn(
                                     "flex-1 p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group relative overflow-hidden h-[58px]",
                                     formData.exchange
@@ -424,90 +662,8 @@ export default function PostListingPage() {
                     </div>
                 </div>
             </div>
-
-            <div className="glass-card p-8 space-y-6">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-primary" />
-                    Plaka Bilgileri
-                </h3>
-                <div className="flex gap-4">
-                    <div className="flex-1">
-                        <label className="block text-sm font-medium mb-2">Plaka</label>
-                        <input
-                            type="text"
-                            className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 focus:border-brand-gold focus:ring-0 uppercase"
-                            placeholder="34 ABC 123"
-                            value={formData.plate}
-                            onChange={e => setFormData({ ...formData, plate: e.target.value.toUpperCase() })}
-                        />
-                    </div>
-                    <div className="flex items-end pb-1">
-                        <button className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-colors">
-                            Sorgula
-                        </button>
-                    </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                    * Plaka sorgulama hizmeti şu an bakım aşamasındadır.
-                </p>
-            </div>
         </div>
     );
-
-    const [expertReports, setExpertReports] = useState<File[]>([]);
-    const [isEligibleForFree, setIsEligibleForFree] = useState<boolean | null>(null);
-    const [checkingEligibility, setCheckingEligibility] = useState(false);
-
-    // Check eligibility when entering finish step
-    useEffect(() => {
-        if (currentStep === "finish" && formData.category) {
-            checkEligibility();
-        }
-    }, [currentStep, formData.category]);
-
-    const checkEligibility = async () => {
-        setCheckingEligibility(true);
-        try {
-            // Import dynamically to avoid server-side issues if any
-            const { checkFreeListingEligibility } = await import("@/lib/actions/listings");
-            const result = await checkFreeListingEligibility(formData.category!);
-            setIsEligibleForFree(result.eligible);
-            // If eligible, default to free package? Or let user choose?
-            // User said: "ilan sayısı eğer aynı kategoride 1 den fazla ise ücretsiz seçenek kapalı olmalı"
-            // So if NOT eligible, disable free option.
-            if (!result.eligible && formData.listingPackage === 'standard') {
-                setFormData(prev => ({ ...prev, listingPackage: 'gold' })); // Default to paid
-            }
-        } catch (error) {
-            console.error("Eligibility check failed", error);
-            setIsEligibleForFree(false); // Fail safe to paid
-        } finally {
-            setCheckingEligibility(false);
-        }
-    };
-
-    const handleExpertReportUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const files = Array.from(e.target.files);
-            // Validate: Max 10 files, Max 5MB each
-            const validFiles = files.filter(file => {
-                const isSizeValid = file.size <= 5 * 1024 * 1024; // 5MB
-                const isTypeValid = file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf') || file.type.startsWith("image/");
-                return isSizeValid && isTypeValid;
-            });
-
-            if (validFiles.length + expertReports.length > 10) {
-                alert("En fazla 10 adet rapor yükleyebilirsiniz.");
-                return;
-            }
-
-            setExpertReports(prev => [...prev, ...validFiles]);
-        }
-    };
-
-    const removeExpertReport = (index: number) => {
-        setExpertReports(prev => prev.filter((_, i) => i !== index));
-    };
 
     const renderConditionStep = () => (
         <div className="max-w-5xl mx-auto space-y-8">
@@ -544,7 +700,7 @@ export default function PostListingPage() {
                                 onChange={e => {
                                     const rawValue = e.target.value.replace(/\D/g, "");
                                     const formatted = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                                    setFormData({ ...formData, tramer: formatted });
+                                    setFormData(prev => ({ ...prev, tramer: formatted }));
                                 }}
                                 disabled={formData.tramer === "0"}
                             />
@@ -560,7 +716,10 @@ export default function PostListingPage() {
                                 type="checkbox"
                                 className="hidden"
                                 checked={formData.tramer === "0"}
-                                onChange={(e) => setFormData({ ...formData, tramer: e.target.checked ? "0" : "" })}
+                                onChange={(e) => {
+                                    const isChecked = e.target.checked;
+                                    setFormData(prev => ({ ...prev, tramer: isChecked ? "0" : "" }));
+                                }}
                             />
                             <span className="font-medium text-sm">Hasar Kaydı (Tramer) Yok</span>
                         </label>
@@ -635,6 +794,19 @@ export default function PostListingPage() {
         />
     );
 
+    const renderPreviewStep = () => (
+        <ListingPreview
+            formData={formData}
+            onEdit={(step) => {
+                const targetStep = step as Step;
+                if (steps.some(s => s.id === targetStep)) {
+                    setCurrentStep(targetStep);
+                    router.push(`/post-listing?step=${targetStep}`);
+                }
+            }}
+        />
+    );
+
     const renderFinishStep = () => (
         <div className="max-w-4xl mx-auto space-y-12">
             <div className="glass-card p-8 space-y-6">
@@ -696,6 +868,11 @@ export default function PostListingPage() {
                 >
                     {isSubmitting ? "İlan Oluşturuluyor..." : "İlanı Onaya Gönder"}
                 </button>
+                {errors.submit && (
+                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm text-center">
+                        {errors.submit}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -705,89 +882,103 @@ export default function PostListingPage() {
         setErrors({});
 
         try {
-            // 1. Upload Listing Images
+            console.log('[DEBUG] Submitting formData:', JSON.stringify(formData, null, 2));
+            console.log('[DEBUG] Category ID being sent:', formData.category);
+
+            // Detailed validation check
+            const missingFields = [];
+            if (!formData.title) missingFields.push("Başlık");
+            if (!formData.price) missingFields.push("Fiyat");
+            if (!formData.category) missingFields.push("Kategori");
+
+            if (missingFields.length > 0) {
+                console.error('[DEBUG] Missing fields:', missingFields);
+                setErrors({ submit: `Lütfen şu alanları doldurunuz: ${missingFields.join(", ")}` });
+                setIsSubmitting(false);
+                return;
+            }
+
             // 1. Upload Listing Images
             let imageUrls: { url: string; order: number }[] = [];
 
-            if (formData.images.length > 0) {
+            // Separate new files and existing URLs
+            const newFiles = formData.images.filter(f => f instanceof File) as File[];
+            const existingImages = formData.images.filter(f => !(f instanceof File)) as { url: string }[];
+
+            // Upload new files
+            if (newFiles.length > 0) {
                 const imageFormData = new FormData();
-                formData.images.forEach((file) => imageFormData.append('files', file));
+                newFiles.forEach((file) => imageFormData.append('files', file));
                 const uploadResult = await uploadListingImages(imageFormData);
                 if (!uploadResult.success || !uploadResult.urls) {
                     throw new Error(uploadResult.error || 'İlan resimleri yüklenemedi');
                 }
-                imageUrls = uploadResult.urls.map((url, i) => ({ url, order: i }));
-            } else {
-                // Mock images if none provided
-                imageUrls = [
-                    { url: 'https://placehold.co/600x400?text=Test+Image+1', order: 0 },
-                    { url: 'https://placehold.co/600x400?text=Test+Image+2', order: 1 }
-                ];
+
+                // Add new URLs
+                uploadResult.urls.forEach(url => {
+                    imageUrls.push({ url, order: 0 }); // Order will be fixed below
+                });
             }
 
-            // 2. Upload Expert Reports (if any)
-            let expertReportUrls: string[] = [];
-            if (expertReports.length > 0) {
-                const reportFormData = new FormData();
-                expertReports.forEach((file) => reportFormData.append('files', file));
-                const reportUploadResult = await uploadListingImages(reportFormData); // Reusing same upload logic for now
-                if (reportUploadResult.success && reportUploadResult.urls) {
-                    expertReportUrls = reportUploadResult.urls;
+            // Combine with existing images and assign order
+            // We need to maintain the order as they appear in formData.images
+            const finalImages = formData.images.map((img, index) => {
+                if (img instanceof File) {
+                    // This was a new file, shift from the uploaded list
+                    return { url: imageUrls.shift()!.url, order: index };
+                } else {
+                    // Existing image
+                    return { url: img.url, order: index };
                 }
-            }
-
-            // 3. Prepare Damage Report
-            const damageReports = Object.entries(formData.damageReport)
-                .filter(([_, data]: [string, any]) => data.status && data.status !== 'original')
-                .map(([part, data]: [string, any]) => ({
-                    part,
-                    status: data.status,
-                    description: data.description || undefined
-                }));
-
-            // 4. Create Listing
-            const result = await createListing({
-                title: formData.title,
-                description: formData.description,
-                price: parseFloat(formData.price.replace(/\./g, "")),
-                categoryId: formData.category!,
-                brand: formData.vehicle.brand || undefined,
-                model: formData.vehicle.model || undefined,
-                year: formData.vehicle.year ? parseInt(formData.vehicle.year) : undefined,
-                km: formData.km ? parseInt(formData.km.replace(/\./g, "")) : undefined,
-                color: formData.color,
-                fuel: formData.vehicle.fuel || undefined,
-                gear: formData.vehicle.gear || undefined,
-                caseType: formData.vehicle.caseType || undefined,
-                version: formData.vehicle.version || undefined,
-                package: formData.vehicle.package || undefined,
-                warranty: formData.warranty,
-                exchange: formData.exchange,
-                tramer: formData.tramer ? formData.tramer.replace(/\./g, "") : undefined,
-                city: formData.location || undefined,
-                images: imageUrls,
-                equipmentIds: formData.equipment,
-                damageReports,
-                // New Fields
-                expertReports: expertReportUrls,
-                contactPreference: formData.contactPreference,
-                listingPackage: formData.listingPackage
             });
 
-            if (result.success && result.data) {
-                router.push(`/listing/${result.data.id}`);
+            const submissionData = {
+                ...formData,
+                images: finalImages,
+                // Ensure numeric values
+                price: parseInt(formData.price.replace(/\./g, "")),
+                km: formData.km ? parseInt(formData.km.replace(/\./g, "")) : null,
+                year: formData.vehicle.year ? parseInt(formData.vehicle.year) : null,
+                // Map nested objects
+                brand: formData.vehicle.brand,
+                model: formData.vehicle.model,
+                fuel: formData.vehicle.fuel,
+                gear: formData.vehicle.gear,
+                caseType: formData.vehicle.caseType,
+                version: formData.vehicle.version,
+                package: formData.vehicle.package,
+                // Map equipment
+                equipmentIds: formData.equipment,
+                // Map damage report
+                damageReports: Object.entries(formData.damageReport).map(([part, data]: [string, any]) => ({
+                    part,
+                    status: data.status,
+                    description: data.description
+                })),
+                categoryId: formData.category === "vasita" ? "cmil7v27a000011zxd9oy9y5p" : formData.category
+            };
+
+            let result;
+            if (isEditing && listingId) {
+                result = await updateListing(listingId, submissionData);
             } else {
-                setErrors({ submit: result.error || 'İlan oluşturulamadı' });
-                window.scrollTo(0, 0);
+                result = await createListing(submissionData);
             }
-        } catch (error: any) {
-            console.error('Submit error:', error);
-            setErrors({ submit: error.message || 'Beklenmeyen bir hata oluştu' });
-            window.scrollTo(0, 0);
-        } finally {
+
+            if (result.success) {
+                localStorage.removeItem("listing_draft"); // Clear draft on success
+                router.push("/success");
+            } else {
+                setErrors({ submit: result.error || "Bir hata oluştu" });
+                setIsSubmitting(false);
+            }
+        } catch (error) {
+            console.error("Submit error:", error);
+            setErrors({ submit: "İlan oluşturulurken bir hata oluştu." });
             setIsSubmitting(false);
         }
     };
+
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -824,7 +1015,6 @@ export default function PostListingPage() {
                         })}
                     </div>
                 </div>
-
                 {/* Step Content */}
                 <div className="transition-all duration-300 ease-in-out">
                     {currentStep === "category" && renderCategoryStep()}
@@ -832,6 +1022,7 @@ export default function PostListingPage() {
                     {currentStep === "condition" && renderConditionStep()}
                     {currentStep === "features" && renderFeaturesStep()}
                     {currentStep === "images" && renderImagesStep()}
+                    {currentStep === "preview" && renderPreviewStep()}
                     {currentStep === "finish" && renderFinishStep()}
                 </div>
 

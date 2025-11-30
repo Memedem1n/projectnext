@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useState, useEffect, useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { login } from "@/lib/actions/auth";
 import { PageBackground } from "@/components/layout/PageBackground";
 import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from "lucide-react";
@@ -34,7 +34,7 @@ function SubmitButton() {
 }
 
 export default function LoginPage() {
-    const [state, formAction] = useFormState(login, null);
+    const [state, formAction] = useActionState(login, null);
     const [otpCode, setOtpCode] = useState("");
     const [otpError, setOtpError] = useState("");
     const [otpLoading, setOtpLoading] = useState(false);
@@ -63,9 +63,11 @@ export default function LoginPage() {
         }
     };
 
-    if (state?.success && !state.requires2FA) {
-        router.push("/dashboard");
-    }
+    useEffect(() => {
+        if (state?.success && !state.requires2FA) {
+            router.push("/dashboard");
+        }
+    }, [state, router]);
 
     // 2FA Form is now handled by VerificationModal
     // if (state?.requires2FA) { ... } removed

@@ -5,8 +5,8 @@ import { Upload, X, Star, Image as ImageIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ImageUploadStepProps {
-    images: File[];
-    onChange: (files: File[]) => void;
+    images: (File | { url: string; name?: string })[];
+    onChange: (files: (File | { url: string; name?: string })[]) => void;
     maxImages?: number;
 }
 
@@ -164,68 +164,74 @@ export function ImageUploadStep({ images, onChange, maxImages = 20 }: ImageUploa
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {images.map((file, index) => (
-                            <div
-                                key={`${file.name}-${index}`}
-                                className={cn(
-                                    "relative group rounded-2xl overflow-hidden border-2 transition-all",
-                                    index === 0
-                                        ? "border-brand-gold ring-4 ring-brand-gold/20"
-                                        : "border-white/10 hover:border-white/30"
-                                )}
-                            >
-                                {/* Image Preview */}
-                                <div className="aspect-square bg-black/20 relative">
-                                    <img
-                                        src={URL.createObjectURL(file)}
-                                        alt={`Preview ${index + 1}`}
-                                        className="w-full h-full object-cover"
-                                    />
+                        {images.map((file, index) => {
+                            const isFile = file instanceof File;
+                            const previewUrl = isFile ? URL.createObjectURL(file) : file.url;
+                            const fileName = isFile ? file.name : (file.name || `Resim ${index + 1}`);
 
-                                    {/* Overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
-                                            <span className="text-xs text-white font-medium truncate">
-                                                {file.name}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Cover Badge */}
-                                    {index === 0 && (
-                                        <div className="absolute top-2 left-2 bg-brand-gold text-primary-foreground px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-lg">
-                                            <Star className="w-3 h-3 fill-current" />
-                                            Kapak
-                                        </div>
+                            return (
+                                <div
+                                    key={`${fileName}-${index}`}
+                                    className={cn(
+                                        "relative group rounded-2xl overflow-hidden border-2 transition-all",
+                                        index === 0
+                                            ? "border-brand-gold ring-4 ring-brand-gold/20"
+                                            : "border-white/10 hover:border-white/30"
                                     )}
+                                >
+                                    {/* Image Preview */}
+                                    <div className="aspect-square bg-black/20 relative">
+                                        <img
+                                            src={previewUrl}
+                                            alt={`Preview ${index + 1}`}
+                                            className="w-full h-full object-cover"
+                                        />
 
-                                    {/* Actions */}
-                                    <div className="absolute top-2 right-2 flex gap-2">
-                                        {index !== 0 && (
-                                            <button
-                                                onClick={() => setCoverImage(index)}
-                                                className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white text-black flex items-center justify-center transition-colors shadow-lg"
-                                                title="Kapak resmi yap"
-                                            >
-                                                <Star className="w-4 h-4" />
-                                            </button>
+                                        {/* Overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
+                                                <span className="text-xs text-white font-medium truncate">
+                                                    {fileName}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Cover Badge */}
+                                        {index === 0 && (
+                                            <div className="absolute top-2 left-2 bg-brand-gold text-primary-foreground px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-lg">
+                                                <Star className="w-3 h-3 fill-current" />
+                                                Kapak
+                                            </div>
                                         )}
-                                        <button
-                                            onClick={() => removeImage(index)}
-                                            className="w-8 h-8 rounded-lg bg-red-500/90 hover:bg-red-500 text-white flex items-center justify-center transition-colors shadow-lg"
-                                            title="Sil"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
+
+                                        {/* Actions */}
+                                        <div className="absolute top-2 right-2 flex gap-2">
+                                            {index !== 0 && (
+                                                <button
+                                                    onClick={() => setCoverImage(index)}
+                                                    className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white text-black flex items-center justify-center transition-colors shadow-lg"
+                                                    title="Kapak resmi yap"
+                                                >
+                                                    <Star className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => removeImage(index)}
+                                                className="w-8 h-8 rounded-lg bg-red-500/90 hover:bg-red-500 text-white flex items-center justify-center transition-colors shadow-lg"
+                                                title="Sil"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Image Number */}
+                                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded text-xs font-medium">
+                                        {index + 1}
                                     </div>
                                 </div>
-
-                                {/* Image Number */}
-                                <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded text-xs font-medium">
-                                    {index + 1}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}

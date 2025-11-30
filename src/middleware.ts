@@ -111,13 +111,27 @@ export async function middleware(request: NextRequest) {
     const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route));
     const isAuthRoute = authRoutes.some((route) => path.startsWith(route));
 
-    // If trying to access protected route without session
-    if (isProtectedRoute && !currentUser) {
-        return NextResponse.redirect(new URL("/login", request.url));
+    // Validate session
+    let isValidSession = false;
+    if (currentUser) {
+        const payload = await decrypt(currentUser);
+        if (payload?.id) {
+            isValidSession = true;
+        }
     }
 
-    // If trying to access auth route with session
-    if (isAuthRoute && currentUser) {
+    // If trying to access protected route without VALID session
+    if (isProtectedRoute && !isValidSession) {
+        const response = NextResponse.redirect(new URL("/login", request.url));
+        // Delete the invalid cookie if it exists
+        if (currentUser) {
+            response.cookies.delete("session");
+        }
+        return response;
+    }
+
+    // If trying to access auth route with VALID session
+    if (isAuthRoute && isValidSession) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
