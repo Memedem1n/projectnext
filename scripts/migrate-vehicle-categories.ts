@@ -83,34 +83,33 @@ async function main() {
                 });
             }
 
-            // 4. Get distinct Versions (SubModels) for this Model
-            const versions = await prisma.vehicleData.findMany({
+            // 4. Get distinct SubModels for this Model
+            const subModels = await prisma.vehicleData.findMany({
                 where: {
                     brand: brandName,
                     model: modelName
                 },
-                distinct: ['version'],
-                select: { version: true },
-                orderBy: { version: 'asc' }
+                distinct: ['subModel'],
+                select: { subModel: true },
+                orderBy: { subModel: 'asc' }
             });
 
-            for (const v of versions) {
-                if (!v.version) continue;
+            for (const sm of subModels) {
+                if (!sm.subModel) continue;
 
-                const versionName = v.version;
-                // Version slug needs to be unique globally
-                const versionSlug = `${modelSlug}-${versionName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+                const subModelName = sm.subModel;
+                const subModelSlug = `${modelSlug}-${subModelName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
 
-                let versionCat = await prisma.category.findUnique({
-                    where: { slug: versionSlug }
+                let subModelCat = await prisma.category.findUnique({
+                    where: { slug: subModelSlug }
                 });
 
-                if (!versionCat) {
-                    // console.log(`Creating Version Category: ${versionName} under ${modelName}`);
+                if (!subModelCat) {
+                    // console.log(`Creating SubModel Category: ${subModelName} under ${modelName}`);
                     await prisma.category.create({
                         data: {
-                            name: versionName,
-                            slug: versionSlug,
+                            name: subModelName,
+                            slug: subModelSlug,
                             parentId: modelCat.id
                         }
                     });

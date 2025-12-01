@@ -3,87 +3,72 @@
 import prisma from '@/lib/prisma'
 import { unstable_cache } from 'next/cache'
 
-const getCategoriesCached = unstable_cache(
-    async (parentId?: string | null) => {
-        try {
-            const categories = await prisma.category.findMany({
-                where: {
-                    parentId: parentId === undefined ? null : parentId
-                },
-                include: {
-                    children: true,
-                    _count: {
-                        select: {
-                            listings: true,
-                            children: true
-                        }
-                    }
-                },
-                orderBy: {
-                    name: 'asc'
-                }
-            })
-
-            return {
-                success: true,
-                data: categories
-            }
-        } catch (error) {
-            console.error('Error fetching categories:', error)
-            return {
-                success: false,
-                error: 'Failed to fetch categories'
-            }
-        }
-    },
-    ['get-categories-v2'],
-    { revalidate: 3600, tags: ['categories-v2'] } // 1 hour cache
-);
 
 export async function getCategories(parentId?: string | null) {
-    return getCategoriesCached(parentId);
-}
-
-const getAllCategoriesCached = unstable_cache(
-    async () => {
-        try {
-            const categories = await prisma.category.findMany({
-                include: {
-                    parent: true,
-                    children: true,
-                    _count: {
-                        select: {
-                            listings: true
-                        }
+    try {
+        const categories = await prisma.category.findMany({
+            where: {
+                parentId: parentId === undefined ? null : parentId
+            },
+            include: {
+                children: true,
+                _count: {
+                    select: {
+                        listings: true,
+                        children: true
                     }
-                },
-                orderBy: {
-                    name: 'asc'
                 }
-            })
+            },
+            orderBy: {
+                name: 'asc'
+            }
+        })
 
-            return {
-                success: true,
-                data: categories
-            }
-        } catch (error) {
-            console.error('Error fetching all categories:', error)
-            return {
-                success: false,
-                error: 'Failed to fetch categories'
-            }
+        return {
+            success: true,
+            data: categories
         }
-    },
-    ['get-all-categories-v2'],
-    { revalidate: 3600, tags: ['categories-v2'] } // 1 hour cache
-);
+    } catch (error) {
+        console.error('Error fetching categories:', error)
+        return {
+            success: false,
+            error: 'Failed to fetch categories'
+        }
+    }
+}
 
 export async function getAllCategories() {
-    return getAllCategoriesCached();
+    try {
+        const categories = await prisma.category.findMany({
+            include: {
+                parent: true,
+                children: true,
+                _count: {
+                    select: {
+                        listings: true
+                    }
+                }
+            },
+            orderBy: {
+                name: 'asc'
+            }
+        })
+
+        return {
+            success: true,
+            data: categories
+        }
+    } catch (error) {
+        console.error('Error fetching all categories:', error)
+        return {
+            success: false,
+            error: 'Failed to fetch categories'
+        }
+    }
 }
 
-const getCategoryBySlugCached = unstable_cache(
-    async (slug: string) => {
+export async function getCategoryBySlug(slug: string) {
+    try {
         const category = await prisma.category.findUnique({
             where: { slug },
             include: {
@@ -96,15 +81,6 @@ const getCategoryBySlugCached = unstable_cache(
                 }
             }
         })
-        return category
-    },
-    ['category-by-slug-v2'],
-    { revalidate: 600, tags: ['categories-v2'] } // 10 minutes cache
-)
-
-export async function getCategoryBySlug(slug: string) {
-    try {
-        const category = await getCategoryBySlugCached(slug)
 
         if (!category) {
             return {
@@ -159,8 +135,8 @@ export async function searchCategories(query: string) {
     }
 }
 
-const getCategoryAncestryLoop = unstable_cache(
-    async (categoryId: string) => {
+export async function getCategoryAncestry(categoryId: string) {
+    try {
         const ancestors: any[] = [];
         let currentId = categoryId;
 
@@ -183,16 +159,6 @@ const getCategoryAncestryLoop = unstable_cache(
             }
         }
 
-        return ancestors;
-    },
-    ['category-ancestry-v2'],
-    { revalidate: 600, tags: ['categories-v2'] } // 10 minutes cache
-)
-
-export async function getCategoryAncestry(categoryId: string) {
-    try {
-        const ancestors = await getCategoryAncestryLoop(categoryId);
-
         return {
             success: true,
             data: ancestors
@@ -206,20 +172,17 @@ export async function getCategoryAncestry(categoryId: string) {
     }
 }
 
-// Cache the entire category structure for efficient lookup
-const getCategoryStructure = unstable_cache(
-    async () => {
-        const categories = await prisma.category.findMany({
-            select: {
-                id: true,
-                parentId: true
-            }
-        });
-        return categories;
-    },
-    ['all-categories-structure-v2'],
-    { revalidate: 600, tags: ['categories-v2'] } // 10 minutes cache
-);
+
+// Direct DB call to avoid cache issues
+export async function getCategoryStructure() {
+    const categories = await prisma.category.findMany({
+        select: {
+            id: true,
+            parentId: true
+        }
+    });
+    return categories;
+}
 
 export async function getAllChildCategoryIds(categoryId: string): Promise<string[]> {
     // Fetch all categories (cached)

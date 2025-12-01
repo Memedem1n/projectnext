@@ -151,7 +151,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                 treeCategories = treeCategories.map(c => ({
                     ...c,
                     count: countMap.get(c.id) || 0
-                }));
+                })).filter(c => c.count > 0); // User requested to hide empty sub-model categories
             }
         }
     } catch (e) {

@@ -53,9 +53,11 @@ export function CategoryHeader({
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2">{category.name} İlanları</h1>
-                    <p className="text-muted-foreground">
-                        Aradığınız kriterlere uygun <span className="text-primary font-bold">{totalListings}</span> ilan bulundu
-                    </p>
+                    {totalListings > 0 && (
+                        <p className="text-muted-foreground">
+                            Aradığınız kriterlere uygun <span className="text-primary font-bold">{totalListings}</span> ilan bulundu
+                        </p>
+                    )}
                 </div>
 
                 {/* Controls: Sort & View Mode */}
