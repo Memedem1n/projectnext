@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BadgeCheck, Phone, ShieldCheck, Upload, AlertCircle, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react";
-import { sendPhoneOTP, verifyPhoneOTP, requestBadge, uploadIdentityDocument } from "@/lib/actions/verification";
+import { sendPhoneOtp, verifyPhoneOtp, submitIdentityVerification } from "@/lib/actions/verification";
 import { useRouter } from "next/navigation";
 
 interface VerificationCenterProps {
@@ -37,7 +37,7 @@ export function VerificationCenter({ user }: VerificationCenterProps) {
     const handleSendOTP = async () => {
         setLoading(true);
         setMessage(null);
-        const result = await sendPhoneOTP(user.phone || "") as any;
+        const result = await sendPhoneOtp(user.phone || "") as any;
         if (result.success) {
             setOtpSent(true);
             setMessage({ type: "success", text: result.message || "Kod gönderildi." });
@@ -50,7 +50,7 @@ export function VerificationCenter({ user }: VerificationCenterProps) {
     const handleVerifyOTP = async () => {
         setLoading(true);
         setMessage(null);
-        const result = await verifyPhoneOTP(user.phone || "", otpCode, user.id) as any;
+        const result = await verifyPhoneOtp(user.phone || "", otpCode) as any;
         if (result.success) {
             setMessage({ type: "success", text: result.message || "Telefon doğrulandı." });
             router.refresh();
@@ -75,7 +75,7 @@ export function VerificationCenter({ user }: VerificationCenterProps) {
         formData.append("birthYear", birthYear);
         formData.append("file", file);
 
-        const result = await uploadIdentityDocument(formData) as any;
+        const result = await submitIdentityVerification(formData) as any;
 
         if (result.success) {
             setMessage({ type: "success", text: result.message || "Belge yüklendi." });
