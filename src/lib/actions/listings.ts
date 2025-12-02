@@ -1,3 +1,4 @@
+
 'use server'
 
 import prisma from '@/lib/prisma'
@@ -6,10 +7,12 @@ import { Listing, Image, Category, ListingEquipment, Equipment, DamageReport } f
 import { unstable_cache, revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { decrypt } from '@/lib/auth-edge'
+import { findEurotaxData } from "@/lib/eurotax"
 
 import { getAllChildCategoryIds } from './categories'
 
 export type ListingWithRelations = Listing & {
+
     images: Image[]
     category: Category
     equipment: (ListingEquipment & { equipment: Equipment })[]
@@ -57,6 +60,8 @@ export async function getListings(params?: {
     sortBy?: 'createdAt' | 'price' | 'km' | 'year'
     sortOrder?: 'asc' | 'desc'
     damageStatus?: 'hasarsiz' | 'degisen' | 'boyali'
+    city?: string
+    district?: string
 }) {
     try {
         const {
@@ -164,6 +169,10 @@ export async function getListings(params?: {
                     }
                 }
             }),
+
+            // Location Filters
+            ...(params?.city && { city: { equals: params.city, mode: 'insensitive' } }),
+            ...(params?.district && { district: { equals: params.district, mode: 'insensitive' } }),
         }
 
         // Direct Prisma call instead of cached
@@ -312,9 +321,29 @@ export async function getListingById(id: string) {
             }
         })
 
+        // Enrich with Eurotax data
+        const eurotaxData = findEurotaxData({
+            brand: listing.brand,
+            year: listing.year,
+            fuel: listing.fuel,
+            gear: listing.gear,
+            caseType: listing.caseType,
+            model: listing.model
+        });
+
+        const enrichedListing = {
+            ...listing,
+            motorPower: eurotaxData?.["Motor Gücü"] || null,
+            engineVolume: eurotaxData?.["Motor Hacmi"] || null,
+            traction: eurotaxData?.["Alt Model"]?.includes("Quattro") || eurotaxData?.["Alt Model"]?.includes("4Matic") || eurotaxData?.["Alt Model"]?.includes("xDrive") ? "4x4" : "Önden Çekiş", // Simple inference
+            series: eurotaxData?.path_4 || null,
+            version: eurotaxData?.path_9 || null,
+            eurotaxId: eurotaxData?.full_path || null
+        };
+
         return {
             success: true,
-            data: listing
+            data: enrichedListing
         }
     } catch (error) {
         console.error('Error fetching listing:', error)
@@ -390,7 +419,7 @@ export async function createListing(data: any) {
             data: {
                 title: data.title,
                 description: data.description,
-                price: parseInt(data.price),
+                price: parseInt(data.price.toString().replace(/\./g, "")),
                 categoryId: data.categoryId,
                 userId: userId,
                 status: 'PENDING', // Default status
@@ -410,7 +439,7 @@ export async function createListing(data: any) {
                 brand: data.brand,
                 model: data.model,
                 year: data.year ? parseInt(data.year) : null,
-                km: data.km ? parseInt(data.km) : null,
+                km: data.km ? parseInt(data.km.toString().replace(/\./g, "")) : null,
                 color: data.color,
                 fuel: data.fuel,
                 gear: data.gear,
@@ -452,7 +481,13 @@ export async function createListing(data: any) {
                         status: item.status,
                         description: item.description
                     })) || []
-                }
+                },
+
+                // Doping Fields
+                isDoping: data.doping && data.doping !== "NONE",
+                dopingType: data.doping !== "NONE" ? data.doping : null,
+                dopingStartDate: data.doping !== "NONE" ? new Date() : null,
+                dopingEndDate: data.doping !== "NONE" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null, // 30 days default
             }
         })
 
@@ -599,7 +634,13 @@ export async function updateListing(id: string, data: any) {
                         status: item.status,
                         description: item.description
                     })) || []
-                }
+                },
+
+                // Doping Fields (Update if changed)
+                isDoping: data.doping && data.doping !== "NONE",
+                dopingType: data.doping !== "NONE" ? data.doping : null,
+                dopingStartDate: data.doping !== "NONE" ? new Date() : null,
+                dopingEndDate: data.doping !== "NONE" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null,
             }
         })
 
@@ -698,3 +739,20 @@ export async function getHybridListings(params: any) {
         }
     };
 }
+
+export async function getUserListingCount(userId: string) {
+    try {
+        const count = await prisma.listing.count({
+            where: {
+                userId,
+                status: 'ACTIVE',
+                isActive: true,
+            },
+        });
+        return { success: true, count };
+    } catch (error) {
+        console.error("Error fetching user listing count:", error);
+        return { success: false, count: 0 };
+    }
+}
+

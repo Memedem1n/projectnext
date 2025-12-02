@@ -20,10 +20,20 @@ export const CATEGORIES: Category[] = [
         icon: Car,
         subcategories: [
             { id: "otomobil", name: "Otomobil" },
-            // Diğer vasıta kategorileri yakında gelecek
-            // { id: "arazi-suv-pickup", name: "Arazi, SUV & Pickup" },
-            // { id: "elektrikli-araclar", name: "Elektrikli Araçlar" },
-            // { id: "motosiklet", name: "Motosiklet" },
+            { id: "arazi-suv-pickup", name: "Arazi, SUV & Pickup" },
+            { id: "elektrikli-araclar", name: "Elektrikli Araçlar" },
+            { id: "motosiklet", name: "Motosiklet" },
+            { id: "minivan-panelvan", name: "Minivan & Panelvan" },
+            { id: "ticari-araclar", name: "Ticari Araçlar" },
+            { id: "kiralik-araclar", name: "Kiralık Araçlar" },
+            { id: "deniz-araclari", name: "Deniz Araçları" },
+            { id: "hasarli-araclar", name: "Hasarlı Araçlar" },
+            { id: "karavan", name: "Karavan" },
+            { id: "klasik-araclar", name: "Klasik Araçlar" },
+            { id: "hava-araclari", name: "Hava Araçları" },
+            { id: "atv", name: "ATV" },
+            { id: "utv", name: "UTV" },
+            { id: "engelli-plakali-araclar", name: "Engelli Plakalı Araçlar" },
         ]
     },
     // Diğer kategoriler yakında gelecek

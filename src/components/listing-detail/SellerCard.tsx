@@ -1,28 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, User } from "lucide-react";
+import { MessageCircle, User, Phone, Calendar, Clock, ShieldCheck } from "lucide-react";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { getUserListingCount } from "@/lib/actions/listings";
 
 interface SellerCardProps {
     user: {
+        id: string;
         name: string | null;
         phone?: string | null;
         role?: string;
         isVerified?: boolean;
+        createdAt?: Date | string;
     };
     listingId: string;
     currentUser: { id: string } | null;
+    contactPreference?: string; // "call", "message", "both"
+    className?: string;
 }
 
-export function SellerCard({ user, listingId, currentUser }: SellerCardProps) {
+export function SellerCard({ user, listingId, currentUser, contactPreference = "both", className }: SellerCardProps) {
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [showPhone, setShowPhone] = useState(false);
+    const [listingCount, setListingCount] = useState<number | null>(null);
     const router = useRouter();
+
     const isCorporate = user.role === 'DEALER';
-    // Corporate sellers are automatically verified, no need to show both badges
     const showVerifiedBadge = !isCorporate && user.isVerified;
+
+    const canCall = contactPreference === "call" || contactPreference === "both";
+    const canMessage = contactPreference === "message" || contactPreference === "both";
+
+    useEffect(() => {
+        const fetchCount = async () => {
+            const result = await getUserListingCount(user.id);
+            if (result.success) {
+                setListingCount(result.count);
+            }
+        };
+        fetchCount();
+    }, [user.id]);
 
     // Format name: Name + Surname(3 chars)***
     const formatName = (fullName: string | null) => {
@@ -50,46 +71,85 @@ export function SellerCard({ user, listingId, currentUser }: SellerCardProps) {
 
     return (
         <>
-            <div className="glass-card p-6 space-y-6">
+            <div className={cn("glass-card p-6 space-y-6", className)}>
+                {/* Header */}
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <User className="w-6 h-6" />
+                    <div className="relative">
+                        <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-muted-foreground overflow-hidden">
+                            <User className="w-7 h-7" />
+                        </div>
+                        {isCorporate && (
+                            <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1 border-2 border-[#0a0a0a]">
+                                <ShieldCheck className="w-3 h-3 text-white" />
+                            </div>
+                        )}
+                        {showVerifiedBadge && (
+                            <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-[#0a0a0a]">
+                                <ShieldCheck className="w-3 h-3 text-white" />
+                            </div>
+                        )}
                     </div>
+
                     <div>
-                        <h3 className="font-semibold text-lg">{formatName(user.name)}</h3>
-                        {/* Show only highest priority badge */}
-                        {isCorporate ? (
-                            <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-500/10 to-blue-600/10 border border-blue-500/20 rounded-md w-fit">
-                                <svg className="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-xs text-blue-500 font-semibold">Kurumsal Üye</span>
-                            </div>
-                        ) : showVerifiedBadge ? (
-                            <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1 bg-gradient-to-r from-green-500/10 to-emerald-600/10 border border-green-500/20 rounded-md w-fit">
-                                <svg className="w-3.5 h-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-xs text-green-500 font-semibold">Doğrulanmış Satıcı</span>
-                            </div>
-                        ) : null}
+                        <h3 className="font-semibold text-lg leading-none mb-1.5">{formatName(user.name)}</h3>
+                        <div className="flex flex-col gap-1">
+                            {isCorporate ? (
+                                <span className="text-xs font-medium text-blue-400">Kurumsal Üye</span>
+                            ) : showVerifiedBadge ? (
+                                <span className="text-xs font-medium text-green-400">Doğrulanmış Satıcı</span>
+                            ) : (
+                                <span className="text-xs text-muted-foreground">Bireysel Satıcı</span>
+                            )}
+
+                            {user.createdAt && (
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    Üyelik: {new Date(user.createdAt).getFullYear()}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="space-y-3">
-                    <Button
-                        onClick={handleMessageClick}
-                        className="w-full justify-start gap-3 h-12 text-base bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
-                    >
-                        <MessageCircle className="w-5 h-5" />
-                        Mesaj Gönder
-                    </Button>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-2 py-4 border-y border-white/10">
+                    <div className="text-center p-2 rounded bg-white/[0.02]">
+                        <div className="text-xs text-muted-foreground mb-1">Yanıt Süresi</div>
+                        <div className="text-sm font-medium flex items-center justify-center gap-1">
+                            <Clock className="w-3 h-3 text-brand-gold" />
+                            3 saat
+                        </div>
+                    </div>
+                    <div className="text-center p-2 rounded bg-white/[0.02]">
+                        <div className="text-xs text-muted-foreground mb-1">Aktif İlan</div>
+                        <div className="text-sm font-medium">
+                            {listingCount !== null ? `${listingCount} İlan` : "..."}
+                        </div>
+                    </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/10">
-                    <p className="text-xs text-muted-foreground text-center">
-                        Güvenli alışveriş için ödemenizi ürünü teslim almadan yapmayın.
-                    </p>
+                {/* Actions */}
+                <div className="space-y-3">
+                    {canCall && (
+                        <Button
+                            onClick={() => setShowPhone(!showPhone)}
+                            variant="outline"
+                            className="w-full justify-center gap-2 h-11 border-brand-gold/20 hover:bg-brand-gold/10 hover:text-brand-gold hover:border-brand-gold/50 transition-all"
+                        >
+                            <Phone className="w-4 h-4" />
+                            {showPhone ? (user.phone || "0532 *** ** **") : "Telefonu Göster"}
+                        </Button>
+                    )}
+
+                    {canMessage && (
+                        <Button
+                            onClick={handleMessageClick}
+                            className="w-full justify-center gap-2 h-11 bg-brand-gold text-black hover:bg-brand-gold/90 font-medium shadow-[0_0_15px_rgba(251,191,36,0.2)] hover:shadow-[0_0_20px_rgba(251,191,36,0.3)] transition-all"
+                        >
+                            <MessageCircle className="w-4 h-4" />
+                            Mesaj Gönder
+                        </Button>
+                    )}
                 </div>
             </div>
 

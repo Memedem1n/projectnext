@@ -1,11 +1,12 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
 
 export function AdminSearch() {
     const searchParams = useSearchParams();
+    const pathname = usePathname();
     const { replace } = useRouter();
 
     const handleSearch = useDebouncedCallback((term: string) => {
@@ -15,7 +16,7 @@ export function AdminSearch() {
         } else {
             params.delete("q");
         }
-        replace(`?${params.toString()}`);
+        replace(`${pathname}?${params.toString()}`);
     }, 300);
 
     return (

@@ -29,8 +29,10 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
     } else if (statusFilter === "deleted") {
         where.status = "DELETED";
     } else {
-        // Default: Don't show deleted listings unless explicitly asked
-        where.status = { not: "DELETED" };
+        // Default: Don't show deleted listings unless explicitly asked OR searching
+        if (!query) {
+            where.status = { not: "DELETED" };
+        }
     }
 
     if (query) {
@@ -39,6 +41,9 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
             { id: { contains: query, mode: 'insensitive' } }
         ];
     }
+
+    console.log('AdminListingsPage Params:', params);
+    console.log('Constructed Where:', JSON.stringify(where, null, 2));
 
     const listings = await prisma.listing.findMany({
         where,
@@ -72,25 +77,25 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
             {/* Status Filter Tabs */}
             <div className="flex items-center gap-2 mb-6 bg-white/5 p-1 rounded-lg border border-white/10 w-fit">
                 <Link
-                    href="/listings"
+                    href="/admin/listings"
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${!statusFilter ? "bg-brand-gold text-black" : "text-muted-foreground hover:text-white"}`}
                 >
                     Tümü
                 </Link>
                 <Link
-                    href="/listings?status=pending"
+                    href="/admin/listings?status=pending"
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${statusFilter === "pending" ? "bg-yellow-500 text-black" : "text-muted-foreground hover:text-white"}`}
                 >
                     Onay Bekleyenler
                 </Link>
                 <Link
-                    href="/listings?status=active"
+                    href="/admin/listings?status=active"
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${statusFilter === "active" ? "bg-green-500 text-black" : "text-muted-foreground hover:text-white"}`}
                 >
                     Yayında
                 </Link>
                 <Link
-                    href="/listings?status=deleted"
+                    href="/admin/listings?status=deleted"
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${statusFilter === "deleted" ? "bg-red-500 text-black" : "text-muted-foreground hover:text-white"}`}
                 >
                     Silinenler

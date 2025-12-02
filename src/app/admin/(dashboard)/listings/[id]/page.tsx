@@ -2,7 +2,7 @@ import { getListingById } from "@/lib/actions/listings";
 import { notFound } from "next/navigation";
 import { ListingGallery } from "@/components/listing-detail/ListingGallery";
 import { SellerCard } from "@/components/listing-detail/SellerCard";
-import { AttributeTable } from "@/components/listing-detail/AttributeTable";
+import { ListingSpecs } from "@/components/listing-detail/ListingSpecs";
 import { SafetyTips } from "@/components/listing-detail/SafetyTips";
 import { DamageReportsSection } from "@/components/listing-detail/DamageReportsSection";
 import { EquipmentSection } from "@/components/listing-detail/EquipmentSection";
@@ -64,7 +64,7 @@ export default async function AdminListingDetailPage({ params }: PageProps) {
                     {/* Left Column: Gallery & Details */}
                     <div className="lg:col-span-2 space-y-8">
                         <ListingGallery images={listing.images} title={listing.title} />
-                        <AttributeTable listing={listing} />
+                        <ListingSpecs listing={listing} />
 
                         {/* Vehicle-specific sections - only show for vasıta category */}
                         {listing.category?.slug?.startsWith('vasita') && (

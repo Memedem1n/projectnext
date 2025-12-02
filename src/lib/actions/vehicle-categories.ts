@@ -32,11 +32,15 @@ export async function getVehicleCategories(slugs: string[]) {
 
     if (depth === 2) {
         // We are at "otomobil" level. Fetch BRANDS.
-        // But we need to filter brands by the category if possible (e.g. only motorcycle brands for motosiklet)
-        // Currently VehicleData doesn't strictly link to category ID, but we can assume all are cars for now or use a mapping.
-        // For simplicity, we fetch all distinct brands from VehicleData.
+        const categorySlug = slugs[1];
 
-        return await getBrands();
+        // Only fetch brands for "otomobil" for now
+        if (categorySlug === 'otomobil') {
+            return await getBrands();
+        }
+
+        // For other categories (hasarli-araclar, etc.), return empty for now
+        return [];
     }
 
     if (depth === 3) {

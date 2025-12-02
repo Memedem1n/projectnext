@@ -1,5 +1,8 @@
-import { FileText, Check, AlertCircle } from "lucide-react";
+"use client";
+
+import { FileText, Check, AlertCircle, FileCheck, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CarDamageSelector } from "@/components/listing/CarDamageSelector";
 
 interface DamageReportsSectionProps {
     damageReports: Array<{
@@ -7,82 +10,101 @@ interface DamageReportsSectionProps {
         status: string;
         description?: string | null;
     }>;
+    tramer?: string | null;
 }
 
-export function DamageReportsSection({ damageReports }: DamageReportsSectionProps) {
-    if (!damageReports || damageReports.length === 0) {
-        return (
-            <div className="glass-card p-6">
-                <h2 className="text-xl font-semibold mb-4 pb-4 border-b border-white/10 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-brand-gold" />
-                    Hasar Kayıtları
-                </h2>
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <Check className="w-12 h-12 text-green-500 mb-3" />
-                    <p className="text-lg font-medium mb-1">Hasar Kaydı Bulunmuyor</p>
-                    <p className="text-sm text-muted-foreground">Bu araç hasarsız olarak kayıtlıdır</p>
-                </div>
-            </div>
-        );
+export function DamageReportsSection({ damageReports, tramer }: DamageReportsSectionProps) {
+    // Transform array to record for selector
+    const damageRecord: Record<string, any> = {};
+    if (damageReports) {
+        damageReports.forEach(report => {
+            damageRecord[report.part] = {
+                status: report.status,
+                description: report.description
+            };
+        });
     }
 
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
-            case 'original':
-            case 'orijinal':
-                return 'text-green-500 bg-green-500/10 border-green-500/20';
-            case 'painted':
-            case 'boyalı':
-            case 'local paint':
-            case 'lokal boya':
-                return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
-            case 'changed':
-            case 'değişen':
-                return 'text-red-500 bg-red-500/10 border-red-500/20';
-            default:
-                return 'text-muted-foreground bg-white/5 border-white/10';
-        }
-    };
-
-    const translateStatus = (status: string) => {
-        const statusMap: Record<string, string> = {
-            'original': 'Orijinal',
-            'painted': 'Boyalı',
-            'local paint': 'Lokal Boya',
-            'changed': 'Değişen'
-        };
-        return statusMap[status.toLowerCase()] || status;
-    };
+    const hasDamage = damageReports && damageReports.length > 0;
 
     return (
-        <div className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
+        <div className="space-y-6">
+            {/* Visual Damage Selector */}
+            <div className="glass-card p-6">
+                <h2 className="text-xl font-semibold mb-6 pb-4 border-b border-white/10 flex items-center gap-2">
                     <FileText className="w-5 h-5 text-brand-gold" />
-                    Hasar Kayıtları
+                    Ekspertiz ve Hasar Durumu
                 </h2>
-                <div className="flex items-center gap-2 text-sm">
-                    <AlertCircle className="w-4 h-4 text-yellow-500" />
-                    <span className="text-muted-foreground">{damageReports.length} kayıt bulundu</span>
-                </div>
-            </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {damageReports.map((report, index) => (
-                    <div
-                        key={index}
-                        className={cn(
-                            "p-4 rounded-xl border transition-all hover:scale-105",
-                            getStatusColor(report.status)
-                        )}
-                    >
-                        <div className="font-medium text-sm mb-1">{report.part}</div>
-                        <div className="text-xs font-semibold mb-2">{translateStatus(report.status)}</div>
-                        {report.description && (
-                            <p className="text-xs opacity-80 line-clamp-2">{report.description}</p>
+                <div className="flex flex-col lg:flex-row gap-8">
+                    {/* Visual Map */}
+                    <div className="flex-1">
+                        <CarDamageSelector
+                            readOnly={true}
+                            initialDamage={damageRecord}
+                        />
+                    </div>
+
+                    {/* Summary & Reports */}
+                    <div className="lg:w-1/3 space-y-6">
+                        {/* Tramer Record */}
+                        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+                            <h3 className="font-medium text-lg mb-3 flex items-center gap-2">
+                                <ShieldAlert className="w-5 h-5 text-brand-gold" />
+                                Tramer Kaydı
+                            </h3>
+                            <div className="text-2xl font-bold text-white mb-1">
+                                {tramer ? `${tramer} TL` : "Hasar Kaydı Yok"}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Sorgulama Tarihi: {new Date().toLocaleDateString('tr-TR')}
+                            </p>
+                        </div>
+
+                        {/* Expert Report Status */}
+                        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
+                            <h3 className="font-medium text-lg mb-3 flex items-center gap-2">
+                                <FileCheck className="w-5 h-5 text-brand-gold" />
+                                Eksper Raporu
+                            </h3>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
+                                    <Check className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="font-medium">Rapor Mevcut</div>
+                                    <div className="text-xs text-muted-foreground">Kurumsal ekspertiz raporu eklidir.</div>
+                                </div>
+                            </div>
+                            <button className="mt-4 w-full py-2 text-sm font-medium text-brand-gold border border-brand-gold/20 rounded-lg hover:bg-brand-gold/10 transition-colors">
+                                Raporu Görüntüle
+                            </button>
+                        </div>
+
+                        {/* Damage Summary Text */}
+                        {hasDamage ? (
+                            <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                                <div className="flex items-center gap-2 text-yellow-500 mb-2">
+                                    <AlertCircle className="w-4 h-4" />
+                                    <span className="font-medium text-sm">Hasar Özeti</span>
+                                </div>
+                                <ul className="space-y-1">
+                                    {damageReports.map((report, idx) => (
+                                        <li key={idx} className="text-xs text-muted-foreground flex justify-between">
+                                            <span>{report.part}</span> // Note: Ideally map part ID to Label here if needed
+                                            <span className="text-white">{report.status}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ) : (
+                            <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
+                                <Check className="w-5 h-5 text-green-500" />
+                                <span className="text-sm font-medium text-green-500">Değişen veya boyalı parça bulunmamaktadır.</span>
+                            </div>
                         )}
                     </div>
-                ))}
+                </div>
             </div>
         </div>
     );

@@ -3,13 +3,10 @@ import { ChevronRight } from "lucide-react";
 import { CATEGORIES } from "@/data/categories";
 import { LiveStats } from "@/components/home/LiveStats";
 import { RecentListings } from "@/components/home/RecentListings";
-import { TrendingSection } from "@/components/home/TrendingSection";
 import { DealOfTheDay } from "@/components/home/DealOfTheDay";
 import { HotDeals } from "@/components/home/HotDeals";
 import { PremiumShowcase } from "@/components/home/PremiumShowcase";
-import { NearbyListings } from "@/components/home/NearbyListings";
 import { TopSellers } from "@/components/home/TopSellers";
-import { PopularSearches } from "@/components/home/PopularSearches";
 import { Testimonials } from "@/components/home/Testimonials";
 import { MobileAppBanner } from "@/components/home/MobileAppBanner";
 import { CategoryBadges } from "@/components/home/CategoryBadges";
@@ -106,9 +103,6 @@ export default async function Home() {
       {/* 2. Recent Listings Timeline */}
       <RecentListings listings={recentListings} />
 
-      {/* 3. Trending This Week */}
-      <TrendingSection />
-
       {/* 4. Deal of the Day */}
       <DealOfTheDay />
 
@@ -118,14 +112,8 @@ export default async function Home() {
       {/* 6. Premium Showcase */}
       <PremiumShowcase />
 
-      {/* 7. Nearby Listings */}
-      <NearbyListings />
-
       {/* 9. Top Sellers */}
       <TopSellers />
-
-      {/* 10. Popular Searches */}
-      <PopularSearches />
 
       {/* 11. Testimonials */}
       <Testimonials />

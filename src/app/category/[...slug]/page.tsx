@@ -130,7 +130,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                 treeCategories = treeCategories.map(c => ({
                     ...c,
                     count: countMap.get(c.name.toLowerCase()) || 0
-                }));
+                })).filter(c => c.count > 0);
             }
             // Case 3: We are displaying SubModels (e.g. under 3 Serisi)
             // Ancestors: [Vasıta, Otomobil, BMW, 3 Serisi] -> We are at 3 Serisi. treeCategories are SubModels.

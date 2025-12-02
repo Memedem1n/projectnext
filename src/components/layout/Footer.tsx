@@ -1,7 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin, Heart } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
+    const pathname = usePathname();
+
+    if (pathname === "/post-listing") return null;
+
     return (
         <footer className="bg-background border-t border-white/10 pt-16 pb-8">
             <div className="container mx-auto px-4">

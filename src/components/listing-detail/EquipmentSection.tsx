@@ -1,4 +1,4 @@
-import { Package, Check } from "lucide-react";
+import { Package, Check, Shield, Armchair, Car, Radio, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EquipmentSectionProps {
@@ -25,39 +25,48 @@ export function EquipmentSection({ equipment }: EquipmentSectionProps) {
         return acc;
     }, {} as Record<string, string[]>);
 
-    const categoryLabels: Record<string, string> = {
-        'Safety': 'Güvenlik',
-        'Interior': 'İç Donanım',
-        'Exterior': 'Dış Donanım',
-        'Multimedia': 'Multimedya'
+    const categoryConfig: Record<string, { label: string; icon: React.ReactNode }> = {
+        'Safety': { label: 'Güvenlik', icon: <Shield className="w-4 h-4" /> },
+        'Interior': { label: 'İç Donanım', icon: <Armchair className="w-4 h-4" /> },
+        'Exterior': { label: 'Dış Donanım', icon: <Car className="w-4 h-4" /> },
+        'Multimedia': { label: 'Multimedya', icon: <Radio className="w-4 h-4" /> }
     };
 
     return (
         <div className="glass-card p-6">
-            <h2 className="text-xl font-semibold mb-4 pb-4 border-b border-white/10 flex items-center gap-2">
+            <h2 className="text-xl font-semibold mb-6 pb-4 border-b border-white/10 flex items-center gap-2">
                 <Package className="w-5 h-5 text-brand-gold" />
                 Donanım Özellikleri
             </h2>
 
-            <div className="space-y-6">
-                {Object.entries(grouped).map(([category, items]) => (
-                    <div key={category}>
-                        <h3 className="text-sm font-semibold text-brand-gold mb-3">
-                            {categoryLabels[category] || category} ({items.length})
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {items.map((item, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                                >
-                                    <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                                    <span className="text-sm">{item}</span>
-                                </div>
-                            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {Object.entries(grouped).map(([category, items]) => {
+                    const config = categoryConfig[category] || { label: category, icon: <Layers className="w-4 h-4" /> };
+
+                    return (
+                        <div key={category} className="space-y-3">
+                            <div className="flex items-center gap-2 text-brand-gold font-medium pb-2 border-b border-white/5">
+                                {config.icon}
+                                <span>{config.label}</span>
+                                <span className="text-xs text-muted-foreground ml-auto bg-white/5 px-2 py-0.5 rounded-full">
+                                    {items.length}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                {items.map((item, index) => (
+                                    <div
+                                        key={index}
+                                        className="flex items-start gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+                                    >
+                                        <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 group-hover:scale-110 transition-transform" />
+                                        <span className="leading-tight">{item}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

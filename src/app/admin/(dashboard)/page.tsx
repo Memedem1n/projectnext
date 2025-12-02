@@ -2,9 +2,10 @@ import prisma from '@/lib/prisma'
 import { Car, Users, Clock, CheckCircle } from 'lucide-react'
 
 export default async function AdminDashboard() {
-    const [totalListings, pendingListings, totalUsers] = await Promise.all([
-        prisma.listing.count(),
+    const [totalListings, pendingListings, activeListings, totalUsers] = await Promise.all([
+        prisma.listing.count({ where: { status: { not: 'DELETED' } } }),
         prisma.listing.count({ where: { status: 'PENDING' } }),
+        prisma.listing.count({ where: { status: 'ACTIVE', isActive: true } }),
         prisma.user.count()
     ])
 
@@ -32,7 +33,7 @@ export default async function AdminDashboard() {
         },
         {
             name: 'Aktif İlanlar',
-            value: totalListings - pendingListings, // This is an approximation, better to query ACTIVE specifically if needed
+            value: activeListings,
             icon: CheckCircle,
             color: 'text-purple-400',
             bg: 'bg-purple-400/10'

@@ -64,7 +64,12 @@ export function CategoryContent({
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <div className="lg:col-span-1">
                     <FilterSidebar
-                        categories={treeCategories.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug, count: c.count }))}
+                        categories={treeCategories.map((c: any) => ({
+                            id: c.id,
+                            name: c.name,
+                            slug: c.slug,
+                            count: isMainCategory ? undefined : c.count
+                        }))}
                         currentCategory={{ id: category.id, name: category.name, slug: category.slug }}
                         ancestors={ancestors.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug }))}
                         currentPath={currentPath}

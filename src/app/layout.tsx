@@ -45,9 +45,13 @@ export default async function RootLayout({
       >
         <ThemeProvider>
           <ComparisonProvider>
-            {!isAdmin && <Navbar />}
-            {children}
-            {!isAdmin && <Footer />}
+            <div className="flex flex-col min-h-screen">
+              {!isAdmin && <Navbar />}
+              <main className="flex-1">
+                {children}
+              </main>
+              {!isAdmin && <Footer />}
+            </div>
             <ComparisonBar />
           </ComparisonProvider>
         </ThemeProvider>

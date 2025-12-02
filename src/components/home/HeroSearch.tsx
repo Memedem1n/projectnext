@@ -44,15 +44,36 @@ export function HeroSearch() {
 
     // Search logic
     useEffect(() => {
-        if (searchQuery.trim().length >= 2) {
-            const results = getSearchSuggestions(searchQuery);
-            setSuggestions(results);
-            setShowSuggestions(true);
-        } else {
-            setSuggestions([]);
-            setShowSuggestions(false);
-        }
-        setSelectedIndex(-1);
+        const fetchSuggestions = async () => {
+            if (searchQuery.trim().length >= 2) {
+                try {
+                    const { searchCategories } = await import('@/lib/actions/categories');
+                    const result = await searchCategories(searchQuery);
+                    if (result.success && result.data) {
+                        // Map server results to suggestion format
+                        const serverSuggestions: SearchSuggestion[] = result.data.map((cat: any) => ({
+                            id: cat.id,
+                            type: 'category',
+                            title: cat.title,
+                            subtitle: cat.subtitle,
+                            url: cat.url,
+                            icon: Car, // Default icon, logic can be improved
+                            score: 100
+                        }));
+                        setSuggestions(serverSuggestions);
+                        setShowSuggestions(true);
+                    }
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+            } else {
+                setSuggestions([]);
+                setShowSuggestions(false);
+            }
+        };
+
+        const timeoutId = setTimeout(fetchSuggestions, 300); // Debounce
+        return () => clearTimeout(timeoutId);
     }, [searchQuery]);
 
     const handleSearch = (url?: string) => {
@@ -121,9 +142,31 @@ export function HeroSearch() {
                 </div>
 
                 {/* Suggestions Dropdown */}
-                {showSuggestions && suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 bg-[#0f0f11]/95 backdrop-blur-xl border border-white/10 border-t-0 rounded-b-2xl shadow-2xl overflow-hidden z-50 max-h-[400px] overflow-y-auto">
-                        <div className="py-2">
+                {showSuggestions && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-[#0f0f11]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 max-h-[400px] overflow-y-auto">
+
+                        {/* Promoted Suggestions (Doping) */}
+                        {searchQuery.length >= 2 && (
+                            <div className="p-2 bg-gradient-to-r from-brand-gold/10 to-transparent border-b border-white/5">
+                                <div className="text-[10px] font-bold text-brand-gold uppercase tracking-wider mb-2 px-2">Öne Çıkanlar</div>
+                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                                    {/* Mock Promoted Items */}
+                                    {[1, 2].map((i) => (
+                                        <div key={i} className="min-w-[140px] bg-black/40 rounded-lg p-2 border border-brand-gold/30 cursor-pointer hover:bg-black/60 transition-colors group">
+                                            <div className="relative h-20 w-full mb-2 rounded-md overflow-hidden">
+                                                <div className="absolute inset-0 bg-gray-800 animate-pulse" /> {/* Placeholder Image */}
+                                                <div className="absolute top-1 left-1 bg-brand-gold text-black text-[8px] font-bold px-1.5 py-0.5 rounded">Fırsat</div>
+                                            </div>
+                                            <div className="text-xs font-medium text-white truncate group-hover:text-brand-gold">Sahibinden Temiz</div>
+                                            <div className="text-[10px] text-gray-400">İstanbul, Kadıköy</div>
+                                            <div className="text-xs font-bold text-brand-gold mt-1">1.250.000 TL</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="py-1">
                             {suggestions.map((suggestion, index) => {
                                 const Icon = suggestion.icon;
                                 const isSelected = index === selectedIndex;

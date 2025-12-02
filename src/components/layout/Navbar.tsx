@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { getSession } from "@/lib/session";
 import { UserMenu } from "./UserMenu";
+import { HeaderSearch } from "./HeaderSearch";
 
 export async function Navbar() {
     const session = await getSession();
@@ -26,18 +27,7 @@ export async function Navbar() {
                 </div>
 
                 {/* Search Bar - Hidden on Homepage */}
-                {!isHomePage && (
-                    <div className="hidden md:flex flex-1 max-w-xl mx-auto relative group">
-                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                            <Search className="w-3.5 h-3.5 text-muted-foreground group-focus-within:text-brand-gold transition-colors" />
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Kelime, ilan no veya mağaza adı ile ara"
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/50 focus:border-brand-gold/50 transition-all placeholder:text-muted-foreground/70 h-9"
-                        />
-                    </div>
-                )}
+                {!isHomePage && <HeaderSearch />}
 
                 {/* Actions */}
                 <div className="flex items-center gap-1.5 md:gap-2">

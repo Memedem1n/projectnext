@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronRight, ChevronLeft, Upload, Check, AlertTriangle, Car, FileText, Shield, Settings, CreditCard, ShieldCheck, RefreshCw, Loader2, ChevronDown, Eye } from "lucide-react";
+import { ChevronRight, ChevronLeft, Upload, Check, AlertTriangle, Car, FileText, Shield, Settings, CreditCard, ShieldCheck, RefreshCw, Loader2, ChevronDown, Eye, Zap } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { PageBackground } from "@/components/layout/PageBackground";
@@ -16,8 +16,21 @@ import { ListingPackages, type PackageType } from "@/components/listing/ListingP
 import { createListing, getListingById, updateListing } from "@/lib/actions/listings";
 import { uploadListingImages } from "@/lib/storage";
 import { cn } from "@/lib/utils";
+import { DopingSelector, type DopingType } from "@/components/listing/DopingSelector";
+import { LocationSelector } from "@/components/listing/LocationSelector";
 
-type Step = "category" | "details" | "condition" | "features" | "images" | "preview" | "finish";
+type Step = "category" | "details" | "condition" | "features" | "images" | "doping" | "preview" | "finish" | "success";
+
+const steps = [
+    { id: "category", title: "Kategori", icon: Car },
+    { id: "details", title: "Detaylar", icon: FileText },
+    { id: "condition", title: "Durum", icon: Shield },
+    { id: "features", title: "Özellikler", icon: Settings },
+    { id: "images", title: "Fotoğraflar", icon: Upload },
+    { id: "doping", title: "Doping", icon: Zap },
+    { id: "preview", title: "Ön İzleme", icon: Eye },
+    { id: "finish", title: "Yayınla", icon: Check },
+];
 
 const COLORS = [
     { value: "beyaz", label: "Beyaz", hex: "#ffffff" },
@@ -43,15 +56,7 @@ export default function PostListingPage() {
     const [isEligibleForFree, setIsEligibleForFree] = useState<boolean | null>(null);
     const [showDraftDialog, setShowDraftDialog] = useState(false);
     const [draftData, setDraftData] = useState<any>(null);
-
-    useEffect(() => {
-        const step = searchParams.get("step") as Step;
-        if (step && steps.some(s => s.id === step)) {
-            setCurrentStep(step);
-        }
-    }, [searchParams]);
-
-
+    const [dopingSelection, setDopingSelection] = useState<DopingType>("NONE");
 
     const [formData, setFormData] = useState({
         // Category & Vehicle
@@ -78,7 +83,10 @@ export default function PostListingPage() {
         exchange: false,
         plate: "",
         trPlate: true,
-        location: "",
+
+        city: "",
+        district: "",
+        neighborhood: "",
 
         // Condition
         damageReport: {} as Record<string, any>,
@@ -97,6 +105,7 @@ export default function PostListingPage() {
     const [isLoading, setIsLoading] = useState(false);
     const listingId = searchParams.get("edit");
     const isEditing = !!listingId;
+    const [createdListingId, setCreatedListingId] = useState<string | null>(null);
 
     // Fetch listing data if editing
     useEffect(() => {
@@ -135,7 +144,9 @@ export default function PostListingPage() {
                         exchange: l.exchange,
                         plate: "", // Don't populate plate for privacy/security or if not returned
                         trPlate: true,
-                        location: "", // City/District logic needed if stored separately
+                        city: l.city || "",
+                        district: l.district || "",
+                        neighborhood: "", // Neighborhood not stored in DB yet
 
                         damageReport: l.damage.reduce((acc: any, curr: any) => ({
                             ...acc,
@@ -169,10 +180,7 @@ export default function PostListingPage() {
         };
 
         fetchListing();
-        fetchListing();
     }, [listingId]);
-
-
 
     const handleResumeDraft = () => {
         if (draftData) {
@@ -199,16 +207,6 @@ export default function PostListingPage() {
             router.replace("/post-listing");
         }
     }, [currentStep, formData.category, router]);
-
-    const steps = [
-        { id: "category", title: "Kategori", icon: Car },
-        { id: "details", title: "Detaylar", icon: FileText },
-        { id: "condition", title: "Durum", icon: Shield },
-        { id: "features", title: "Özellikler", icon: Settings },
-        { id: "images", title: "Fotoğraflar", icon: Upload },
-        { id: "preview", title: "Önizleme", icon: Eye },
-        { id: "finish", title: "Yayınla", icon: CreditCard },
-    ];
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -256,12 +254,21 @@ export default function PostListingPage() {
         }
     }, [isEditing]);
 
+    // Trigger submission when reaching finish step
+    useEffect(() => {
+        if (currentStep === "finish") {
+            handleSubmit();
+        }
+    }, [currentStep]);
+
     const validateDetails = () => {
         const newErrors: Record<string, string> = {};
         if (!formData.title.trim()) newErrors.title = "İlan başlığı zorunludur";
         if (!formData.price) newErrors.price = "Fiyat zorunludur";
         if (!formData.km) newErrors.km = "Kilometre zorunludur";
         if (!formData.color) newErrors.color = "Renk seçimi zorunludur";
+        if (!formData.city) newErrors.location = "İl seçimi zorunludur";
+        if (!formData.district) newErrors.location = "İlçe seçimi zorunludur";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -315,37 +322,42 @@ export default function PostListingPage() {
             if (!validateCategory()) {
                 return;
             }
-        }
-
-        if (currentStep === "details") {
+            setCurrentStep("details");
+        } else if (currentStep === "details") {
             if (!validateDetails()) {
                 window.scrollTo(0, 0);
                 return;
             }
-        }
-
-        if (currentStep === "images") {
+            setCurrentStep("condition");
+        } else if (currentStep === "condition") {
+            setCurrentStep("features");
+        } else if (currentStep === "features") {
+            setCurrentStep("images");
+        } else if (currentStep === "images") {
             if (!validateImages()) {
                 window.scrollTo(0, 0);
                 return;
             }
+            setCurrentStep("doping");
+        } else if (currentStep === "doping") {
+            setCurrentStep("preview");
+        } else if (currentStep === "preview") {
+            setCurrentStep("finish");
         }
 
-        const currentIndex = steps.findIndex(s => s.id === currentStep);
-        if (currentIndex < steps.length - 1) {
-            const nextStep = steps[currentIndex + 1].id;
-            router.push(`/post-listing?step=${nextStep}`);
-            window.scrollTo(0, 0);
-        }
+        window.scrollTo(0, 0);
     };
 
     const handleBack = () => {
-        const currentIndex = steps.findIndex(s => s.id === currentStep);
-        if (currentIndex > 0) {
-            const prevStep = steps[currentIndex - 1].id;
-            router.push(`/post-listing?step=${prevStep}`);
-            window.scrollTo(0, 0);
-        }
+        if (currentStep === "details") setCurrentStep("category");
+        else if (currentStep === "condition") setCurrentStep("details");
+        else if (currentStep === "features") setCurrentStep("condition");
+        else if (currentStep === "images") setCurrentStep("features");
+        else if (currentStep === "doping") setCurrentStep("images");
+        else if (currentStep === "preview") setCurrentStep("doping");
+        else if (currentStep === "finish") setCurrentStep("preview");
+
+        window.scrollTo(0, 0);
     };
 
     const handleCategorySelect = (category: any, subcategory?: any) => {
@@ -374,9 +386,7 @@ export default function PostListingPage() {
         setFormData(prev => ({ ...prev, vehicle: vehicleData }));
 
         // Automatically move to next step
-        const currentIndex = steps.findIndex(s => s.id === "category");
-        const nextStep = steps[currentIndex + 1].id;
-        router.push(`/post-listing?step=${nextStep}`);
+        setCurrentStep("details");
     };
 
     const renderCategoryStep = () => (
@@ -520,6 +530,27 @@ export default function PostListingPage() {
                                 setFormData(prev => ({ ...prev, description: val }));
                             }}
                         />
+                    </div>
+
+                    {/* Location Selector */}
+                    <div className="pt-4 border-t border-white/10">
+                        <LocationSelector
+                            initialLocation={{
+                                city: formData.city,
+                                district: formData.district,
+                                neighborhood: formData.neighborhood
+                            }}
+                            onSelect={(loc) => {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    city: loc.city,
+                                    district: loc.district,
+                                    neighborhood: loc.neighborhood
+                                }));
+                                if (errors.location) setErrors(prev => ({ ...prev, location: "" }));
+                            }}
+                        />
+                        {errors.location && <p className="text-xs text-red-500 mt-1">{errors.location}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -799,275 +830,210 @@ export default function PostListingPage() {
         />
     );
 
+    const renderDopingStep = () => (
+        <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <DopingSelector
+                selectedDoping={dopingSelection}
+                onSelect={setDopingSelection}
+            />
+            <div className="flex justify-between pt-6">
+                <button
+                    onClick={handleBack}
+                    className="px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors flex items-center"
+                >
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Geri Dön
+                </button>
+                <button
+                    onClick={handleNext}
+                    className="px-6 py-3 bg-brand-gold text-primary-foreground rounded-xl font-bold hover:bg-brand-gold/90 transition-colors flex items-center"
+                >
+                    Devam Et
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                </button>
+            </div>
+        </div>
+    );
+
     const renderPreviewStep = () => (
         <ListingPreview
-            formData={formData}
-            onEdit={(step) => {
-                const targetStep = step as Step;
-                if (steps.some(s => s.id === targetStep)) {
-                    setCurrentStep(targetStep);
-                    router.push(`/post-listing?step=${targetStep}`);
-                }
-            }}
+            data={{ ...formData, doping: dopingSelection }}
+            onBack={handleBack}
+            onSubmit={handleNext}
+            isLoading={isLoading}
         />
     );
 
-    const renderFinishStep = () => (
-        <div className="max-w-4xl mx-auto space-y-12">
-            <div className="glass-card p-8 space-y-6">
-                <h3 className="text-xl font-bold">İletişim Tercihleri</h3>
-                <p className="text-sm text-muted-foreground">Müşteriler size nasıl ulaşsın?</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                        { id: "both", label: "Arama ve Mesaj" },
-                        { id: "call", label: "Sadece Arama" },
-                        { id: "message", label: "Sadece Mesaj" }
-                    ].map(opt => (
-                        <button
-                            key={opt.id}
-                            onClick={() => setFormData(prev => ({ ...prev, contactPreference: opt.id as any }))}
-                            className={cn(
-                                "p-4 rounded-2xl border transition-all font-medium",
-                                formData.contactPreference === opt.id
-                                    ? "bg-brand-gold/20 border-brand-gold text-brand-gold"
-                                    : "bg-white/5 border-white/10 hover:bg-white/10"
-                            )}
-                        >
-                            {opt.label}
-                        </button>
-                    ))}
-                </div>
+    const renderSuccessStep = () => (
+        <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in duration-500">
+            <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mb-6">
+                <Check className="w-12 h-12 text-green-500" />
             </div>
+            <h2 className="text-3xl font-bold mb-4">İlanınız Başarıyla Oluşturuldu! 🚀</h2>
+            <p className="text-muted-foreground text-lg max-w-md mb-8">
+                İlanınız editörlerimiz tarafından incelendikten sonra yayına alınacaktır. Bu süreç genellikle 1-2 saat sürmektedir.
+            </p>
 
-            <div className="space-y-6">
-                <h3 className="text-xl font-bold">İlan Paketi Seçimi</h3>
-                {checkingEligibility ? (
-                    <div className="text-center py-8">
-                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-brand-gold" />
-                        <p className="text-muted-foreground mt-2">Paket uygunluğu kontrol ediliyor...</p>
-                    </div>
-                ) : (
-                    <ListingPackages
-                        selectedPackage={formData.listingPackage}
-                        onChange={(pkg) => setFormData(prev => ({ ...prev, listingPackage: pkg }))}
-                        isFreeEligible={isEligibleForFree ?? false}
-                    />
-                )}
-            </div>
-
-            <div className="glass-card p-8 bg-brand-gold/10 border-brand-gold/20">
-                <h3 className="text-xl font-bold mb-4">Özet ve Onay</h3>
-                <p className="text-muted-foreground mb-6">
-                    İlanınız yayınlanmadan önce editör onayına gönderilecektir.
-                    Onay veya ret durumunda size bildirim yapılacaktır.
-                </p>
+            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
                 <button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting || checkingEligibility}
-                    className={cn(
-                        "w-full py-4 bg-brand-gold text-primary-foreground rounded-2xl font-bold text-lg transition-all shadow-lg shadow-brand-gold/20",
-                        (isSubmitting || checkingEligibility)
-                            ? "opacity-50 cursor-not-allowed"
-                            : "hover:bg-brand-gold/90 hover:scale-[1.02] active:scale-[0.98]"
-                    )}
+                    onClick={() => router.push("/")}
+                    className="flex-1 px-6 py-4 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-medium"
                 >
-                    {isSubmitting ? "İlan Oluşturuluyor..." : "İlanı Onaya Gönder"}
+                    Anasayfaya Dön
                 </button>
-                {errors.submit && (
-                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm text-center">
-                        {errors.submit}
-                    </div>
-                )}
+                <button
+                    onClick={() => {
+                        const targetId = listingId || createdListingId;
+                        if (targetId) {
+                            router.push(`/listing/${targetId}`);
+                        } else {
+                            router.push("/dashboard/listings");
+                        }
+                    }}
+                    className="flex-1 px-6 py-4 bg-brand-gold text-primary-foreground rounded-xl font-bold hover:bg-brand-gold/90 transition-colors"
+                >
+                    İlanlarımı Görüntüle
+                </button>
             </div>
         </div>
     );
 
     const handleSubmit = async () => {
+        if (isSubmitting) return;
         setIsSubmitting(true);
-        setErrors({});
 
         try {
-            console.log('[DEBUG] Submitting formData:', JSON.stringify(formData, null, 2));
-            console.log('[DEBUG] Category ID being sent:', formData.category);
-
-            // Detailed validation check
-            const missingFields = [];
-            if (!formData.title) missingFields.push("Başlık");
-            if (!formData.price) missingFields.push("Fiyat");
-            if (!formData.category) missingFields.push("Kategori");
-
-            if (missingFields.length > 0) {
-                console.error('[DEBUG] Missing fields:', missingFields);
-                setErrors({ submit: `Lütfen şu alanları doldurunuz: ${missingFields.join(", ")}` });
-                setIsSubmitting(false);
-                return;
-            }
-
-            // 1. Upload Listing Images
-            let imageUrls: { url: string; order: number }[] = [];
-
-            // Separate new files and existing URLs
-            const newFiles = formData.images.filter(f => f instanceof File) as File[];
-            const existingImages = formData.images.filter(f => !(f instanceof File)) as { url: string }[];
-
-            // Upload new files
-            if (newFiles.length > 0) {
-                const imageFormData = new FormData();
-                newFiles.forEach((file) => imageFormData.append('files', file));
-                const uploadResult = await uploadListingImages(imageFormData);
-                if (!uploadResult.success || !uploadResult.urls) {
-                    throw new Error(uploadResult.error || 'İlan resimleri yüklenemedi');
-                }
-
-                // Add new URLs
-                uploadResult.urls.forEach(url => {
-                    imageUrls.push({ url, order: 0 }); // Order will be fixed below
-                });
-            }
-
-            // Combine with existing images and assign order
-            const finalImages = formData.images.map((img, index) => {
-                if (img instanceof File) {
-                    return { url: imageUrls.shift()!.url, order: index };
-                } else {
-                    return { url: img.url, order: index };
+            // Upload images first
+            const imageFormData = new FormData();
+            formData.images.forEach((file) => {
+                if (file instanceof File) {
+                    imageFormData.append("files", file);
                 }
             });
+            const uploadResult = await uploadListingImages(imageFormData);
 
-            // 2. Upload Expert Reports
-            let expertReportUrls: string[] = [];
-            if (expertReports.length > 0) {
-                const reportFormData = new FormData();
-                expertReports.forEach((file) => reportFormData.append('files', file));
-
-                // Reuse the same upload function or a specific one if needed
-                // For now, using uploadListingImages as it handles generic file uploads to /api/upload
-                const uploadResult = await uploadListingImages(reportFormData);
-
-                if (!uploadResult.success || !uploadResult.urls) {
-                    throw new Error(uploadResult.error || 'Ekspertiz raporları yüklenemedi');
-                }
-                expertReportUrls = uploadResult.urls;
+            if (!uploadResult.success || !uploadResult.urls) {
+                throw new Error("Resim yükleme başarısız oldu: " + uploadResult.error);
             }
 
+            // Prepare submission data
             const submissionData = {
                 ...formData,
-                images: finalImages,
-                expertReports: expertReportUrls,
-                // Ensure numeric values
-                price: parseInt(formData.price.replace(/\./g, "")),
-                km: formData.km ? parseInt(formData.km.replace(/\./g, "")) : null,
-                year: formData.vehicle.year ? parseInt(formData.vehicle.year) : null,
-                // Map nested objects
-                brand: formData.vehicle.brand,
-                model: formData.vehicle.model,
-                fuel: formData.vehicle.fuel,
-                gear: formData.vehicle.gear,
-                caseType: formData.vehicle.caseType,
-                version: formData.vehicle.version,
-                package: formData.vehicle.package,
-                // Map equipment
-                equipmentIds: formData.equipment,
-                // Map damage report
-                damageReports: Object.entries(formData.damageReport).map(([part, data]: [string, any]) => ({
-                    part,
-                    status: data.status,
-                    description: data.description
-                })),
-                categoryId: formData.category
+                categoryId: formData.category, // Map category ID
+                ...formData.vehicle, // Flatten vehicle details
+                city: formData.city,
+                district: formData.district,
+                images: uploadResult.urls.map(url => ({ url })),
+                doping: dopingSelection
             };
 
+            // Call server action
             let result;
-            if (isEditing && listingId) {
-                result = await updateListing(listingId, submissionData);
-            } else {
-                result = await createListing(submissionData);
-            }
+            try {
+                if (isEditing && listingId) {
+                    result = await updateListing(listingId, submissionData);
+                } else {
+                    result = await createListing(submissionData);
+                }
 
-            if (result.success) {
-                localStorage.removeItem("listing_draft"); // Clear draft on success
-                router.push("/success");
-            } else {
-                setErrors({ submit: result.error || "Bir hata oluştu" });
-                setIsSubmitting(false);
+                if (result.success && result.data) {
+                    // Clear draft
+                    localStorage.removeItem("listing_draft");
+                    // Redirect to success page or listing
+                    setCreatedListingId(result.data.id); // Store the new listing ID
+                    setCurrentStep("success");
+                } else {
+                    alert("İlan oluşturulurken bir hata oluştu: " + (result.error || "Bilinmeyen hata"));
+                    setCurrentStep("preview"); // Go back to preview on error
+                }
+            } catch (error) {
+                console.error("Submission error:", error);
+                alert("Beklenmeyen bir hata oluştu. Lütfen tekrar deneyiniz.");
+                setCurrentStep("preview"); // Go back to preview on error
             }
-        } catch (error: any) {
-            console.error("Submit error:", error);
-            setErrors({ submit: error.message || "İlan oluşturulurken bir hata oluştu." });
+        } catch (error) {
+            console.error("Submission error:", error);
+            alert("Beklenmeyen bir hata oluştu.");
+        } finally {
             setIsSubmitting(false);
         }
     };
 
-
     return (
-        <div className="min-h-screen flex flex-col">
-            <PageBackground />
-            <main className="flex-1 pt-12 pb-12 px-4 relative z-10">
-                {/* Progress Bar */}
-                <div className="max-w-4xl mx-auto mb-12">
-                    <div className="flex items-center justify-between relative">
-                        <div className="absolute left-0 top-5 -translate-y-1/2 w-full h-1 bg-white/10 -z-10" />
-                        {steps.map((step, index) => {
-                            const Icon = step.icon;
-                            const isActive = step.id === currentStep;
-                            const isCompleted = steps.findIndex(s => s.id === currentStep) > index;
+        <PageBackground>
+            <div className="pt-24 pb-8 px-4">
+                {/* Progress Steps - Hide on success */}
+                {currentStep !== "success" && (
+                    <div className="max-w-4xl mx-auto mb-12 overflow-x-auto pb-4">
+                        <div className="flex items-center justify-between min-w-[600px] px-2">
+                            {steps.map((step, index) => {
+                                const isActive = currentStep === step.id;
+                                const isCompleted = steps.findIndex(s => s.id === currentStep) > index;
+                                const Icon = step.icon;
 
-                            return (
-                                <div key={step.id} className="flex flex-col items-center gap-2 px-4">
-                                    <div className={cn(
-                                        "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                                        isActive ? "border-brand-gold bg-brand-gold text-primary-foreground scale-110" :
-                                            isCompleted ? "border-brand-gold bg-brand-gold/20 text-brand-gold" :
-                                                "border-white/20 bg-black/40 backdrop-blur-md text-muted-foreground"
-                                    )}>
-                                        {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+                                return (
+                                    <div key={step.id} className="flex flex-col items-center gap-2 bg-[#0f0f11] px-2">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+                                            isActive ? "border-brand-gold bg-brand-gold text-black scale-110 shadow-[0_0_20px_rgba(255,215,0,0.3)]" :
+                                                isCompleted ? "border-brand-gold bg-brand-gold/20 text-brand-gold" :
+                                                    "border-white/10 bg-black text-muted-foreground"
+                                        )}>
+                                            {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+                                        </div>
+                                        <span className={cn(
+                                            "text-xs font-medium transition-colors",
+                                            isActive ? "text-brand-gold" :
+                                                isCompleted ? "text-foreground" :
+                                                    "text-muted-foreground"
+                                        )}>{step.title}</span>
                                     </div>
-                                    <span className={cn(
-                                        "text-xs font-medium transition-colors",
-                                        isActive ? "text-brand-gold" :
-                                            isCompleted ? "text-foreground" : "text-muted-foreground"
-                                    )}>
-                                        {step.title}
-                                    </span>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
-                {/* Step Content */}
-                <div className="transition-all duration-300 ease-in-out">
+                )}
+
+                <div className="max-w-5xl mx-auto px-4 pb-20">
                     {currentStep === "category" && renderCategoryStep()}
                     {currentStep === "details" && renderDetailsStep()}
                     {currentStep === "condition" && renderConditionStep()}
                     {currentStep === "features" && renderFeaturesStep()}
                     {currentStep === "images" && renderImagesStep()}
+                    {currentStep === "doping" && renderDopingStep()}
                     {currentStep === "preview" && renderPreviewStep()}
-                    {currentStep === "finish" && renderFinishStep()}
-                </div>
+                    {currentStep === "success" && renderSuccessStep()}
 
-                {/* Navigation Buttons */}
-                {currentStep !== "category" && (
-                    <div className="max-w-4xl mx-auto mt-12 flex justify-between">
-                        <button
-                            onClick={handleBack}
-                            className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors flex items-center gap-2"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                            Geri
-                        </button>
-
-                        {currentStep !== "finish" && (
+                    {/* Navigation Buttons (Except for specific steps that handle their own nav) */}
+                    {currentStep !== "category" && currentStep !== "doping" && currentStep !== "preview" && currentStep !== "finish" && currentStep !== "success" && (
+                        <div className="flex justify-between pt-8 border-t border-white/10 mt-8">
+                            <button
+                                onClick={handleBack}
+                                className="px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors flex items-center"
+                            >
+                                <ChevronLeft className="w-4 h-4 mr-2" />
+                                Geri Dön
+                            </button>
                             <button
                                 onClick={handleNext}
-                                className="px-8 py-3 rounded-xl bg-brand-gold text-primary-foreground hover:bg-brand-gold/90 transition-colors flex items-center gap-2 font-medium"
+                                className="px-6 py-3 bg-brand-gold text-primary-foreground rounded-xl font-bold hover:bg-brand-gold/90 transition-colors flex items-center"
                             >
                                 Devam Et
-                                <ChevronRight className="w-4 h-4" />
+                                <ChevronRight className="w-4 h-4 ml-2" />
                             </button>
-                        )}
-                    </div>
-                )}
-            </main>
-        </div>
+                        </div>
+                    )}
+
+                    {currentStep === "finish" && (
+                        <div className="text-center py-20">
+                            <Loader2 className="w-12 h-12 animate-spin mx-auto text-brand-gold mb-4" />
+                            <h2 className="text-2xl font-bold mb-2">İlanınız Hazırlanıyor</h2>
+                            <p className="text-muted-foreground">Lütfen bekleyiniz, ilanınız oluşturuluyor...</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </PageBackground>
     );
 }
+
