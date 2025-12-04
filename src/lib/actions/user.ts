@@ -91,3 +91,54 @@ export async function toggleFavorite(listingId: string) {
         return { success: false, error: "Failed to toggle favorite" };
     }
 }
+
+export async function getUserListings() {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { success: false, error: "Unauthorized" };
+
+        const listings = await prisma.listing.findMany({
+            where: { userId: user.id },
+            include: {
+                images: { orderBy: { order: 'asc' }, take: 1 },
+                category: true,
+                equipment: { include: { equipment: true } },
+                damage: true,
+                user: { select: { id: true, name: true, email: true, phone: true, avatar: true, createdAt: true, role: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return { success: true, data: listings };
+    } catch (error) {
+        console.error('Error getting user listings:', error);
+        return { success: false, error: "Failed to fetch listings" };
+    }
+}
+
+export async function deleteUserListing(listingId: string) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { success: false, error: "Unauthorized" };
+
+        const listing = await prisma.listing.findFirst({
+            where: {
+                id: listingId,
+                userId: user.id
+            }
+        });
+
+        if (!listing) {
+            return { success: false, error: "Listing not found or unauthorized" };
+        }
+
+        await prisma.listing.delete({
+            where: { id: listingId }
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting listing:', error);
+        return { success: false, error: "Failed to delete listing" };
+    }
+}
