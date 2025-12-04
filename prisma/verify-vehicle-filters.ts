@@ -10,8 +10,7 @@ async function main() {
     // Test 1: Filter by HP
     console.log('\nTest 1: Filter by HP (Min: 150)');
     const hpListings = await getListings({
-        categorySlug: ['vasita', 'otomobil'],
-        minHp: '150'
+        minHp: 150
     });
     if (!hpListings.success || !hpListings.data) {
         console.error('Error fetching HP listings:', hpListings);
@@ -25,8 +24,7 @@ async function main() {
     // Test 2: Filter by CC
     console.log('\nTest 2: Filter by CC (Min: 1800)');
     const ccListings = await getListings({
-        categorySlug: ['vasita', 'otomobil'],
-        minCc: '1800'
+        minCc: 1800
     });
     console.log(`Found ${ccListings.data?.length} listings with > 1800 CC`);
     ccListings.data?.forEach(l => {
@@ -36,7 +34,6 @@ async function main() {
     // Test 3: Filter by Drive Type (Traction)
     console.log('\nTest 3: Filter by Drive Type (4WD)');
     const fwdListings = await getListings({
-        categorySlug: ['vasita', 'otomobil'],
         driveType: '4wd'
     });
     console.log(`Found ${fwdListings.data?.length} 4WD listings`);
@@ -47,8 +44,7 @@ async function main() {
     // Test 4: Combined Filter (HP + Drive Type)
     console.log('\nTest 4: Combined Filter (HP > 150 + 4WD)');
     const combinedListings = await getListings({
-        categorySlug: ['vasita', 'otomobil'],
-        minHp: '150',
+        minHp: 150,
         driveType: '4wd'
     });
     console.log(`Found ${combinedListings.data?.length} listings`);
@@ -58,8 +54,7 @@ async function main() {
     // Test 5: Filter Camaro by HP/CC
     console.log('\nTest 5: Filter Camaro (HP > 600)');
     const camaroListings = await getListings({
-        categorySlug: ['vasita', 'otomobil'],
-        minHp: '600'
+        minHp: 600
     });
     console.log(`Found ${camaroListings.data?.length} listings with > 600 HP`);
     camaroListings.data?.forEach(l => {
