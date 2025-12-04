@@ -31,3 +31,61 @@ export async function getCurrentUser() {
         return null
     }
 }
+
+export async function getUserFavorites() {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { success: false, error: "Unauthorized" };
+
+        const favorites = await prisma.favorite.findMany({
+            where: { userId: user.id },
+            include: {
+                listing: {
+                    include: {
+                        images: { orderBy: { order: 'asc' }, take: 1 },
+                        category: true,
+                        user: { select: { id: true, name: true, role: true } }
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return { success: true, data: favorites.map(f => f.listing) };
+    } catch (error) {
+        console.error('Error getting user favorites:', error);
+        return { success: false, error: "Failed to fetch favorites" };
+    }
+}
+
+export async function toggleFavorite(listingId: string) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { success: false, error: "Unauthorized" };
+
+        const existing = await prisma.favorite.findFirst({
+            where: {
+                userId: user.id,
+                listingId
+            }
+        });
+
+        if (existing) {
+            await prisma.favorite.delete({
+                where: { id: existing.id }
+            });
+            return { success: true, isFavorite: false };
+        } else {
+            await prisma.favorite.create({
+                data: {
+                    userId: user.id,
+                    listingId
+                }
+            });
+            return { success: true, isFavorite: true };
+        }
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        return { success: false, error: "Failed to toggle favorite" };
+    }
+}
