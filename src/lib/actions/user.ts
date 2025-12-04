@@ -142,3 +142,23 @@ export async function deleteUserListing(listingId: string) {
         return { success: false, error: "Failed to delete listing" };
     }
 }
+
+export async function updateUserProfile(data: { name?: string; phone?: string }) {
+    try {
+        const user = await getCurrentUser();
+        if (!user) return { success: false, error: "Unauthorized" };
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                ...(data.name && { name: data.name }),
+                ...(data.phone && { phone: data.phone })
+            }
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        return { success: false, error: "Failed to update profile" };
+    }
+}
