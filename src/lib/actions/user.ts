@@ -46,7 +46,7 @@ export async function getUserFavorites() {
                         category: true,
                         equipment: { include: { equipment: true } },
                         damage: true,
-                        user: { select: { id: true, name: true, role: true } }
+                        user: { select: { id: true, name: true, email: true, phone: true, avatar: true, createdAt: true, role: true } }
                     }
                 }
             },
