@@ -17,7 +17,7 @@ async function main() {
         return;
     }
     console.log(`Found ${hpListings.data.length} listings with > 150 HP`);
-    hpListings.data.forEach(l => {
+    hpListings.data.forEach((l: any) => {
         console.log(`- ${l.title}: ${l.motorPower} HP`);
     });
 
@@ -27,7 +27,7 @@ async function main() {
         minCc: 1800
     });
     console.log(`Found ${ccListings.data?.length} listings with > 1800 CC`);
-    ccListings.data?.forEach(l => {
+    ccListings.data?.forEach((l: any) => {
         console.log(`- ${l.title}: ${l.engineVolume} CC`);
     });
 
@@ -37,7 +37,7 @@ async function main() {
         driveType: '4wd'
     });
     console.log(`Found ${fwdListings.data?.length} 4WD listings`);
-    fwdListings.data?.forEach(l => {
+    fwdListings.data?.forEach((l: any) => {
         console.log(`- ${l.title}: ${l.traction}`);
     });
 
@@ -48,7 +48,7 @@ async function main() {
         driveType: '4wd'
     });
     console.log(`Found ${combinedListings.data?.length} listings`);
-    combinedListings.data?.forEach(l => {
+    combinedListings.data?.forEach((l: any) => {
         console.log(`- ${l.title}: ${l.motorPower} HP, ${l.traction}`);
     });
     // Test 5: Filter Camaro by HP/CC
@@ -57,7 +57,7 @@ async function main() {
         minHp: 600
     });
     console.log(`Found ${camaroListings.data?.length} listings with > 600 HP`);
-    camaroListings.data?.forEach(l => {
+    camaroListings.data?.forEach((l: any) => {
         console.log(`- ${l.title}: ${l.motorPower} HP`);
     });
 }
