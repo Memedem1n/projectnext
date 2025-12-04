@@ -44,7 +44,7 @@ export async function getUserFavorites() {
                     include: {
                         images: { orderBy: { order: 'asc' }, take: 1 },
                         category: true,
-                        equipment: true,
+                        equipment: { include: { equipment: true } },
                         damage: true,
                         user: { select: { id: true, name: true, role: true } }
                     }
