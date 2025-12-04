@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Check, Edit2, MessageSquare, X } from "lucide-react";
+import { Check, Edit2, MessageSquare, X, AlertCircle } from "lucide-react";
 
 
 type DamageType = "original" | "local_paint" | "painted" | "changed";
@@ -56,11 +56,15 @@ const carParts = [
 export function CarDamageSelector({
     readOnly = false,
     initialDamage = {},
-    onChange
+    onChange,
+    plate,
+    plateNationality
 }: {
     readOnly?: boolean;
     initialDamage?: Record<string, any>;
     onChange?: (report: Record<string, any>) => void;
+    plate?: string | null;
+    plateNationality?: string | null;
 }) {
     const [parts, setParts] = useState<Record<string, any>>(initialDamage);
     const [isClean, setIsClean] = useState(false);
@@ -209,6 +213,25 @@ export function CarDamageSelector({
                                 </div>
                             );
                         })()
+                    )}
+
+                    {/* Plate Display */}
+                    {readOnly && (
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-20">
+                            {plate ? (
+                                <div className="bg-white text-black px-3 py-1 rounded border-2 border-black font-mono font-bold text-sm shadow-lg tracking-wider min-w-[100px] text-center flex items-center justify-between gap-2">
+                                    <div className="bg-blue-600 h-full w-3 -ml-1 flex flex-col justify-end pb-0.5">
+                                        <span className="text-[4px] text-white font-bold leading-none text-center">TR</span>
+                                    </div>
+                                    <span>{plate}</span>
+                                </div>
+                            ) : (
+                                <div className="bg-red-500/10 backdrop-blur-md border border-red-500/20 text-red-500 px-3 py-1.5 rounded-lg text-xs font-medium shadow-lg flex items-center gap-2 whitespace-nowrap">
+                                    <AlertCircle className="w-3 h-3" />
+                                    Plaka Bilgisi Girilmemiş
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {!readOnly && (

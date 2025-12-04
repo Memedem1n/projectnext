@@ -34,7 +34,15 @@ Revamp the listing detail page (`/listing/[id]`) to provide a premium, data-rich
 ### 4.1. Database Schema
 - **Model:** `Listing`
 - **Fields:** Use `contactPreference` for phone visibility logic.
-- **New Fields Needed:** `motorPower` (hp), `engineVolume` (cc), `traction`, `heavyDamage` (boolean). *If schema update is not possible immediately, use mock data or existing fields where possible.*
+- **New Fields Needed:** `motorPower` (hp), `engineVolume` (cc), `traction`, `heavyDamage` (boolean), `plate` (string), `plateNationality` (string).
+
+### 4.2. Logic & UI Requirements
+- **Plate Logic:** Detect if plate is TR format (regex). If TR, show "Türkiye (TR) Plakalı", else "TR Plakalı Değil".
+- **Seller Type:** Display "Kimden" as "Galeriden" if user is Dealer, "Sahibinden" if Individual.
+- **Vehicle Status:** Dealers can post "0" or "2. El". Individuals can ONLY post "2. El".
+- **Warranty:** Show green check/indicator if warranty is active.
+- **Color:** Display selected color.
+- **Traction:** Hide for now.
 
 ### 4.2. Components
 - `src/components/listing-detail/PromotedListings.tsx`: New component for "Dopingli İlanlar".

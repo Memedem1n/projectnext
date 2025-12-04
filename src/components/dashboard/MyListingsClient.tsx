@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Edit2, Eye, Trash2, MoreVertical, Clock, CheckCircle, XCircle, List, Search } from "lucide-react";
+import { Edit2, Eye, Trash2, MoreVertical, Clock, CheckCircle, XCircle, List, Search, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { DeleteListingModal } from "./DeleteListingModal";
+import RestoreListingModal from "./RestoreListingModal";
+import { deleteListing, restoreListing } from "@/lib/actions/listings";
+import { BadgeSelectionModal } from "./BadgeSelectionModal";
 
-type Tab = "active" | "pending" | "passive";
+type Tab = "active" | "pending" | "passive" | "deleted";
 
 interface MyListingsClientProps {
     listings: any[];
@@ -18,8 +22,9 @@ export function MyListingsClient({ listings }: MyListingsClientProps) {
     const filteredListings = listings.filter(item => {
         // Tab filtering
         let matchesTab = false;
-        if (activeTab === "active") matchesTab = item.isActive === true;
-        else if (activeTab === "passive") matchesTab = item.isActive === false;
+        if (activeTab === "active") matchesTab = item.isActive === true && item.status === 'ACTIVE';
+        else if (activeTab === "passive") matchesTab = item.isActive === false && item.status === 'PASSIVE';
+        else if (activeTab === "deleted") matchesTab = item.status === 'DELETED';
         else matchesTab = false; // Pending logic placeholder
 
         // Search filtering
@@ -29,6 +34,75 @@ export function MyListingsClient({ listings }: MyListingsClientProps) {
 
         return matchesTab && matchesSearch;
     });
+
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [listingToDelete, setListingToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isRestoring, setIsRestoring] = useState<string | null>(null);
+    const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+    const [listingToRestore, setListingToRestore] = useState<string | null>(null);
+
+    // Badge Modal State
+    const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
+    const [listingToBadge, setListingToBadge] = useState<string | null>(null);
+
+    const handleDeleteClick = (id: string) => {
+        console.log("Delete button clicked for id:", id);
+        setListingToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDeleteConfirm = async (reason: string, details: string) => {
+        console.log("Confirming delete for:", listingToDelete, "Reason:", reason);
+        if (!listingToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            const result = await deleteListing(listingToDelete, reason, details);
+            console.log("Delete result:", result);
+            if (result.success) {
+                setIsDeleteModalOpen(false);
+                setListingToDelete(null);
+            } else {
+                alert("İlan silinirken bir hata oluştu: " + (result.error || "Bilinmeyen hata"));
+            }
+        } catch (error) {
+            console.error("Delete error:", error);
+            alert("Bir hata oluştu.");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleRestoreClick = (id: string) => {
+        setListingToRestore(id);
+        setIsRestoreModalOpen(true);
+    };
+
+    const handleRestoreConfirm = async (packageType: string) => {
+        if (!listingToRestore) return;
+
+        setIsRestoring(listingToRestore);
+        try {
+            const result = await restoreListing(listingToRestore, packageType);
+            if (result.success) {
+                setIsRestoreModalOpen(false);
+                setListingToRestore(null);
+            } else {
+                alert("İlan geri alınırken bir hata oluştu: " + (result.error || "Bilinmeyen hata"));
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Bir hata oluştu.");
+        } finally {
+            setIsRestoring(null);
+        }
+    };
+
+    const handleBadgeClick = (id: string) => {
+        setListingToBadge(id);
+        setIsBadgeModalOpen(true);
+    };
 
     return (
         <div className="space-y-6">
@@ -45,6 +119,7 @@ export function MyListingsClient({ listings }: MyListingsClientProps) {
                     {[
                         { id: "active", label: "Yayında", icon: CheckCircle },
                         { id: "passive", label: "Pasif", icon: XCircle },
+                        { id: "deleted", label: "Silinenler", icon: Trash2 },
                     ].map(tab => {
                         const Icon = tab.icon;
                         return (
@@ -125,14 +200,41 @@ export function MyListingsClient({ listings }: MyListingsClientProps) {
 
                             {/* Actions */}
                             <div className="flex md:flex-col gap-2 justify-center border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-4">
-                                <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-sm font-medium">
-                                    <Edit2 className="w-4 h-4" />
-                                    Düzenle
-                                </button>
-                                <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors text-sm font-medium">
-                                    <Trash2 className="w-4 h-4" />
-                                    Sil
-                                </button>
+                                {activeTab === 'deleted' ? (
+                                    <button
+                                        onClick={() => handleRestoreClick(item.id)}
+                                        disabled={isRestoring === item.id}
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-colors text-sm font-medium"
+                                    >
+                                        <CheckCircle className="w-4 h-4" />
+                                        {isRestoring === item.id ? "Geri Alınıyor..." : "Tekrar Yayına Al"}
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={() => handleBadgeClick(item.id)}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 transition-colors text-sm font-medium"
+                                        >
+                                            <Tag className="w-4 h-4" />
+                                            Rozet
+                                        </button>
+                                        <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-sm font-medium">
+                                            <Edit2 className="w-4 h-4" />
+                                            Düzenle
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                console.log("Delete button clicked (inline)");
+                                                handleDeleteClick(item.id);
+                                            }}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors text-sm font-medium"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                            Sil
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     ))
@@ -146,6 +248,26 @@ export function MyListingsClient({ listings }: MyListingsClientProps) {
                     </div>
                 )}
             </div>
+
+            <DeleteListingModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDeleteConfirm}
+                isDeleting={isDeleting}
+            />
+
+            <RestoreListingModal
+                isOpen={isRestoreModalOpen}
+                onClose={() => setIsRestoreModalOpen(false)}
+                onConfirm={handleRestoreConfirm}
+                isRestoring={!!isRestoring}
+            />
+
+            <BadgeSelectionModal
+                isOpen={isBadgeModalOpen}
+                onClose={() => setIsBadgeModalOpen(false)}
+                listingId={listingToBadge}
+            />
         </div>
     );
 }

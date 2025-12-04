@@ -18,6 +18,7 @@ import { uploadListingImages } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { DopingSelector, type DopingType } from "@/components/listing/DopingSelector";
 import { LocationSelector } from "@/components/listing/LocationSelector";
+import { getCurrentUser } from "@/lib/actions/user";
 
 type Step = "category" | "details" | "condition" | "features" | "images" | "doping" | "preview" | "finish" | "success";
 
@@ -46,6 +47,28 @@ const COLORS = [
 ];
 
 export default function PostListingPage() {
+    // ... (existing state)
+    const [userRole, setUserRole] = useState<string | null>(null);
+    const [vehicleStatus, setVehicleStatus] = useState<"second-hand" | "zero">("second-hand");
+
+    useEffect(() => {
+        getCurrentUser().then(user => {
+            if (user) {
+                setUserRole(user.role);
+                // If individual, force second-hand
+                if (user.role !== "DEALER") {
+                    setVehicleStatus("second-hand");
+                }
+            }
+        });
+    }, []);
+
+    // ... (existing useEffects)
+
+
+    // ... (existing renderDetailsStep)
+
+
     const router = useRouter();
     const searchParams = useSearchParams();
     const [currentStep, setCurrentStep] = useState<Step>("category");
@@ -210,6 +233,24 @@ export default function PostListingPage() {
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Plate Logic
+    const handlePlateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value.toUpperCase();
+        setFormData(prev => ({ ...prev, plate: val }));
+
+        // TR Plate Regex: 01-81, 1-3 letters, 2-4 digits
+        // Simplified: Starts with 2 digits (01-81), then letters, then digits
+        const trRegex = /^(0[1-9]|[1-7][0-9]|8[0-1])\s*[A-Z]{1,3}\s*\d{2,4}$/;
+        const isTr = trRegex.test(val.replace(/\s/g, ''));
+
+        setFormData(prev => ({
+            ...prev,
+            plate: val,
+            trPlate: isTr,
+            plateNationality: isTr ? "Türkiye (TR) Plakalı" : "TR Plakalı Değil"
+        }));
+    };
 
     // Draft System Logic
     useEffect(() => {
@@ -644,57 +685,127 @@ export default function PostListingPage() {
                             {errors.color && <p className="text-xs text-red-500 mt-1">{errors.color}</p>}
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        {/* Plate Input */}
+                        <div>
+                            <label className="block text-sm font-medium mb-2">Plaka</label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    className={cn(
+                                        "w-full bg-black/20 border rounded-2xl p-4 focus:ring-0 transition-colors uppercase",
+                                        "border-white/10 focus:border-brand-gold"
+                                    )}
+                                    placeholder="34 ABC 123"
+                                    value={formData.plate}
+                                    onChange={handlePlateChange}
+                                    maxLength={15}
+                                />
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                    {formData.plate && (
+                                        <span className={cn("text-xs font-medium px-2 py-1 rounded", formData.trPlate ? "bg-green-500/20 text-green-500" : "bg-yellow-500/20 text-yellow-500")}>
+                                            {formData.trPlate ? "TR" : "Yabancı"}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Vehicle Status (New/Used) */}
+                    <div className="pt-4 border-t border-white/10">
+                        <label className="block text-sm font-medium mb-4">Araç Durumu <span className="text-red-500">*</span></label>
+                        <div className="flex gap-4">
                             <button
-                                onClick={() => setFormData(prev => ({ ...prev, warranty: !prev.warranty }))}
+                                onClick={() => setVehicleStatus("second-hand")}
                                 className={cn(
-                                    "flex-1 p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group relative overflow-hidden h-[58px]",
-                                    formData.warranty
+                                    "flex-1 p-4 rounded-xl border transition-all flex items-center justify-center gap-2",
+                                    vehicleStatus === "second-hand"
                                         ? "bg-brand-gold/10 border-brand-gold text-brand-gold"
-                                        : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+                                        : "bg-black/20 border-white/10 hover:bg-white/5"
                                 )}
                             >
-                                <div className={cn(
-                                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0",
-                                    formData.warranty ? "bg-brand-gold text-primary-foreground" : "bg-white/10 text-muted-foreground group-hover:bg-white/20"
-                                )}>
-                                    <ShieldCheck className="w-4 h-4" />
-                                </div>
-                                <div className="text-left leading-tight">
-                                    <div className="font-bold text-sm">Garantili</div>
-                                </div>
-                                {formData.warranty && (
-                                    <div className="absolute top-2 right-2">
-                                        <Check className="w-3 h-3 text-brand-gold" />
-                                    </div>
-                                )}
+                                <Car className="w-5 h-5" />
+                                <span className="font-medium">İkinci El</span>
                             </button>
 
                             <button
-                                onClick={() => setFormData(prev => ({ ...prev, exchange: !prev.exchange }))}
+                                onClick={() => {
+                                    if (userRole === "DEALER") {
+                                        setVehicleStatus("zero");
+                                        setFormData(prev => ({ ...prev, km: "0" }));
+                                    } else {
+                                        alert("Sıfır araç ilanı sadece kurumsal üyeler (Galeriler/Bayiler) tarafından verilebilir.");
+                                    }
+                                }}
                                 className={cn(
-                                    "flex-1 p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group relative overflow-hidden h-[58px]",
-                                    formData.exchange
-                                        ? "bg-blue-500/10 border-blue-500 text-blue-500"
-                                        : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+                                    "flex-1 p-4 rounded-xl border transition-all flex items-center justify-center gap-2",
+                                    vehicleStatus === "zero"
+                                        ? "bg-brand-gold/10 border-brand-gold text-brand-gold"
+                                        : "bg-black/20 border-white/10 hover:bg-white/5",
+                                    userRole !== "DEALER" && "opacity-50 cursor-not-allowed"
                                 )}
                             >
-                                <div className={cn(
-                                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0",
-                                    formData.exchange ? "bg-blue-500 text-white" : "bg-white/10 text-muted-foreground group-hover:bg-white/20"
-                                )}>
-                                    <RefreshCw className="w-4 h-4" />
-                                </div>
-                                <div className="text-left leading-tight">
-                                    <div className="font-bold text-sm">Takaslı</div>
-                                </div>
-                                {formData.exchange && (
-                                    <div className="absolute top-2 right-2">
-                                        <Check className="w-3 h-3 text-blue-500" />
-                                    </div>
-                                )}
+                                <Zap className="w-5 h-5" />
+                                <span className="font-medium">Sıfır (0 KM)</span>
                             </button>
                         </div>
+                        {userRole !== "DEALER" && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                                * Bireysel satıcılar sadece İkinci El araç ilanı verebilir.
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setFormData(prev => ({ ...prev, warranty: !prev.warranty }))}
+                            className={cn(
+                                "flex-1 p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group relative overflow-hidden h-[58px]",
+                                formData.warranty
+                                    ? "bg-brand-gold/10 border-brand-gold text-brand-gold"
+                                    : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+                            )}
+                        >
+                            <div className={cn(
+                                "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0",
+                                formData.warranty ? "bg-brand-gold text-primary-foreground" : "bg-white/10 text-muted-foreground group-hover:bg-white/20"
+                            )}>
+                                <ShieldCheck className="w-4 h-4" />
+                            </div>
+                            <div className="text-left leading-tight">
+                                <div className="font-bold text-sm">Garantili</div>
+                            </div>
+                            {formData.warranty && (
+                                <div className="absolute top-2 right-2">
+                                    <Check className="w-3 h-3 text-brand-gold" />
+                                </div>
+                            )}
+                        </button>
+
+                        <button
+                            onClick={() => setFormData(prev => ({ ...prev, exchange: !prev.exchange }))}
+                            className={cn(
+                                "flex-1 p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group relative overflow-hidden h-[58px]",
+                                formData.exchange
+                                    ? "bg-blue-500/10 border-blue-500 text-blue-500"
+                                    : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+                            )}
+                        >
+                            <div className={cn(
+                                "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0",
+                                formData.exchange ? "bg-blue-500 text-white" : "bg-white/10 text-muted-foreground group-hover:bg-white/20"
+                            )}>
+                                <RefreshCw className="w-4 h-4" />
+                            </div>
+                            <div className="text-left leading-tight">
+                                <div className="font-bold text-sm">Takaslı</div>
+                            </div>
+                            {formData.exchange && (
+                                <div className="absolute top-2 right-2">
+                                    <Check className="w-3 h-3 text-blue-500" />
+                                </div>
+                            )}
+                        </button>
                     </div>
                 </div>
             </div>

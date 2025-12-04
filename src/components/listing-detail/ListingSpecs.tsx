@@ -9,26 +9,41 @@ export function ListingSpecs({ listing }: ListingSpecsProps) {
     // Check if it's a vehicle listing (either by category or by presence of vehicle-specific fields)
     const isVasita = listing.category?.slug?.startsWith('vasita') || listing.brand || listing.model;
 
+    // Helper to capitalize
+    const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+
     // Vehicle Specs List (Matching the image order)
     const specs = [
         { label: "İlan No", value: listing.listingNumber || listing.id.substring(0, 8), highlight: true },
         { label: "İlan Tarihi", value: new Date(listing.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) },
         { label: "Marka", value: listing.brand },
-        { label: "Seri", value: listing.series || listing.model?.split(' ')[0] },
-        { label: "Model", value: listing.version || listing.model },
+        { label: "Seri", value: listing.series },
+        { label: "Model", value: listing.model },
         { label: "Yıl", value: listing.year },
         { label: "Yakıt Tipi", value: listing.fuel },
         { label: "Vites", value: listing.gear },
-        { label: "Araç Durumu", value: "İkinci El" }, // Static for now
+        { label: "Araç Durumu", value: listing.km === 0 ? "Sıfır" : "İkinci El" },
         { label: "KM", value: listing.km?.toLocaleString() },
         { label: "Kasa Tipi", value: listing.caseType },
         { label: "Motor Gücü", value: listing.motorPower },
         { label: "Motor Hacmi", value: listing.engineVolume },
-        { label: "Çekiş", value: listing.traction },
-        { label: "Renk", value: listing.color },
-        { label: "Garanti", value: listing.warranty ? "Evet" : "Hayır" },
+        // { label: "Çekiş", value: listing.traction }, // Hidden as requested
+        { label: "Renk", value: capitalize(listing.color) },
+        {
+            label: "Garanti",
+            value: listing.warranty ? "Evet" : "Hayır",
+            render: listing.warranty ? (
+                <span className="flex items-center gap-1 text-green-500 font-bold">
+                    <ShieldCheck className="w-4 h-4" />
+                    Evet
+                </span>
+            ) : "Hayır"
+        },
         { label: "Ağır Hasar Kayıtlı", value: listing.heavyDamage ? "Evet" : "Hayır" },
-        { label: "Plaka / Uyruk", value: "Türkiye (TR) Plakalı" }, // Static for now
+        {
+            label: "Plaka / Uyruk",
+            value: listing.plateNationality || (listing.plate?.match(/^(0[1-9]|[1-7][0-9]|8[0-1])\s*[A-Z]{1,3}\s*\d{2,4}$/) ? "Türkiye (TR) Plakalı" : "Yabancı Uyruklu")
+        },
         { label: "Kimden", value: listing.user?.role === 'DEALER' ? 'Galeriden' : 'Sahibinden' },
         { label: "Takas", value: listing.exchange ? "Evet" : "Hayır" },
     ];
@@ -57,7 +72,7 @@ export function ListingSpecs({ listing }: ListingSpecsProps) {
                                 "font-medium text-sm text-right",
                                 spec.highlight ? "text-red-500" : "text-foreground"
                             )}>
-                                {spec.value || "-"}
+                                {spec.render || spec.value || "-"}
                             </span>
                         </div>
                     ))}

@@ -1,11 +1,12 @@
 'use server'
 
-import { supabaseAdmin } from './supabase'
+import { writeFile, mkdir, unlink } from 'fs/promises'
+import path from 'path'
 import { randomUUID } from 'crypto'
 
 /**
- * Upload listing images to Supabase Storage
- * @param files - Array of File objects to upload
+ * Upload listing images to Local Storage
+ * @param formData - FormData containing 'files'
  * @returns Array of public URLs for the uploaded images
  */
 export async function uploadListingImages(formData: FormData): Promise<{ success: boolean; urls?: string[]; error?: string }> {
@@ -14,43 +15,34 @@ export async function uploadListingImages(formData: FormData): Promise<{ success
         const urls: string[] = []
         console.log(`[Upload] Starting upload for ${files.length} files`);
 
+        const uploadDir = path.join(process.cwd(), 'public/uploads/listings')
+
+        // Ensure directory exists
+        try {
+            await mkdir(uploadDir, { recursive: true })
+        } catch (error) {
+            // Ignore if exists
+        }
+
         for (const file of files) {
             // Generate unique filename
             const fileExt = file.name.split('.').pop()
             const fileName = `${randomUUID()}.${fileExt}`
-            const filePath = `listings/${fileName}`
+            const filePath = path.join(uploadDir, fileName)
 
             // Convert File to Buffer
             const arrayBuffer = await file.arrayBuffer()
             const buffer = Buffer.from(arrayBuffer)
 
-            console.log(`[Upload] Uploading ${fileName} (${file.size} bytes) to listings/${fileName}`);
+            console.log(`[Upload] Uploading ${fileName} (${file.size} bytes) to ${filePath}`);
 
-            // Upload to Supabase Storage
-            const { data, error } = await supabaseAdmin.storage
-                .from('listings')
-                .upload(filePath, buffer, {
-                    contentType: file.type,
-                    cacheControl: '3600',
-                    upsert: false
-                })
+            // Write to filesystem
+            await writeFile(filePath, buffer)
 
-            if (error) {
-                console.error('[Upload] Supabase error:', error)
-                // Fallback for development: Use placeholder if upload fails
-                const placeholderUrl = `https://placehold.co/600x400?text=${encodeURIComponent(file.name)}`
-                console.log(`[Upload] Using fallback URL: ${placeholderUrl}`)
-                urls.push(placeholderUrl)
-                continue
-            }
-            console.log(`[Upload] Success: ${fileName}`);
-
-            // Get public URL
-            const { data: { publicUrl } } = supabaseAdmin.storage
-                .from('listings')
-                .getPublicUrl(filePath)
-
+            const publicUrl = `/uploads/listings/${fileName}`
             urls.push(publicUrl)
+
+            console.log(`[Upload] Success: ${publicUrl}`);
         }
 
         return { success: true, urls }
@@ -61,28 +53,31 @@ export async function uploadListingImages(formData: FormData): Promise<{ success
 }
 
 /**
- * Delete listing image from Supabase Storage
+ * Delete listing image from Local Storage
  * @param url - Public URL of the image to delete
  */
 export async function deleteListingImage(url: string): Promise<{ success: boolean; error?: string }> {
     try {
-        // Extract file path from URL
-        const urlParts = url.split('/storage/v1/object/public/listings/')
-        if (urlParts.length < 2) {
+        // Extract filename from URL
+        // URL format: /uploads/listings/filename.ext
+        const fileName = url.split('/uploads/listings/').pop()
+
+        if (!fileName || url === fileName) {
+            // Handle cases where URL might be external or invalid
+            if (url.startsWith('http')) return { success: true } // Skip external URLs
             return { success: false, error: 'Invalid image URL' }
         }
 
-        const filePath = `listings/${urlParts[1]}`
+        const filePath = path.join(process.cwd(), 'public/uploads/listings', fileName)
 
-        const { error } = await supabaseAdmin.storage
-            .from('listings')
-            .remove([filePath])
-
-        if (error) {
-            return { success: false, error: error.message }
+        try {
+            await unlink(filePath)
+            return { success: true }
+        } catch (error) {
+            console.error('Delete error:', error)
+            // If file doesn't exist, consider it success
+            return { success: true }
         }
-
-        return { success: true }
     } catch (error) {
         console.error('Delete error:', error)
         return { success: false, error: 'Unexpected error during deletion' }

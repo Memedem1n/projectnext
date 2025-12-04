@@ -216,9 +216,16 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
             km: l.km,
             fuel: l.fuel,
             gear: l.gear,
+            hp: l.motorPower,
+            cc: l.engineVolume,
             warranty: l.warranty,
             exchange: l.exchange,
-            user: l.user
+            user: l.user,
+            isDoping: l.isDoping,
+            isPremium: l.isPremium,
+            listingPackage: l.listingPackage,
+            dopingType: l.dopingType,
+            badges: l.badges
         }));
         pagination = result.pagination;
     }

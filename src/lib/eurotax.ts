@@ -31,16 +31,47 @@ function getEurotaxData(): EurotaxRecord[] {
 
     try {
         const fileContent = fs.readFileSync(EUROTAX_CSV_PATH, 'utf-8');
-        cachedData = parse(fileContent, {
+        const rawData = parse(fileContent, {
             columns: true,
             skip_empty_lines: true,
             trim: true
         });
+
+        // Fix encoding issues (UTF-8 bytes interpreted as Windows-1252/Latin-1)
+        cachedData = rawData.map((record: any) => {
+            const newRecord: any = {};
+            for (const key in record) {
+                const fixedKey = fixEncoding(key);
+                newRecord[fixedKey] = fixEncoding(record[key]);
+            }
+            return newRecord as EurotaxRecord;
+        });
+
         return cachedData || [];
     } catch (error) {
         console.error("Error reading Eurotax CSV:", error);
         return [];
     }
+}
+
+function fixEncoding(str: string): string {
+    if (!str) return str;
+    return str
+        .replace(/Ã¼/g, 'ü')
+        .replace(/Ã¶/g, 'ö')
+        .replace(/Ã§/g, 'ç')
+        .replace(/Ä±/g, 'ı')
+        .replace(/ÅŸ/g, 'ş')
+        .replace(/ÄŸ/g, 'ğ')
+        .replace(/Ã‡/g, 'Ç')
+        .replace(/Ã–/g, 'Ö')
+        .replace(/Ãœ/g, 'Ü')
+        .replace(/Åž/g, 'Ş')
+        .replace(/ÄĞ/g, 'Ğ') // Check this one
+        .replace(/Ä°/g, 'İ')
+        // Handle split cases if any
+        .replace(/Ä/g, 'Ğ') // Fallback for Ğ if needed, but be careful
+        .replace(/Å/g, 'Ş'); // Fallback
 }
 
 export function findEurotaxData(listing: {

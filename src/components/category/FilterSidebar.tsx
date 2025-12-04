@@ -57,6 +57,21 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
+    // Helper functions for number formatting
+    const formatNumber = (value: string) => {
+        if (!value) return "";
+        // Remove existing dots and non-digits
+        const cleanVal = value.replace(/\D/g, "");
+        if (!cleanVal) return "";
+        // Format with dots
+        return new Intl.NumberFormat('tr-TR').format(parseInt(cleanVal));
+    };
+
+    const parseNumber = (value: string) => {
+        if (!value) return "";
+        return value.replace(/\./g, "");
+    };
+
     // Detect category type based on slug or ancestors
     // Detect category type based on slug or ancestors
     const isEmlakCategory = currentCategory?.slug?.startsWith('emlak') ||
@@ -199,20 +214,20 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
         }
 
         setFilters({
-            minPrice: searchParams.get("minPrice") || "",
-            maxPrice: searchParams.get("maxPrice") || "",
-            minYear: searchParams.get("minYear") || "",
-            maxYear: searchParams.get("maxYear") || "",
-            minKm: searchParams.get("minKm") || "",
-            maxKm: searchParams.get("maxKm") || "",
+            minPrice: formatNumber(searchParams.get("minPrice") || ""),
+            maxPrice: formatNumber(searchParams.get("maxPrice") || ""),
+            minYear: formatNumber(searchParams.get("minYear") || ""),
+            maxYear: formatNumber(searchParams.get("maxYear") || ""),
+            minKm: formatNumber(searchParams.get("minKm") || ""),
+            maxKm: formatNumber(searchParams.get("maxKm") || ""),
             fuelType: searchParams.get("fuelType") || "",
             transmission: searchParams.get("transmission") || "",
             driveType: searchParams.get("driveType") || "",
             bodyType: searchParams.get("bodyType") || "",
-            minHp: searchParams.get("minHp") || "",
-            maxHp: searchParams.get("maxHp") || "",
-            minCc: searchParams.get("minCc") || "",
-            maxCc: searchParams.get("maxCc") || "",
+            minHp: formatNumber(searchParams.get("minHp") || ""),
+            maxHp: formatNumber(searchParams.get("maxHp") || ""),
+            minCc: formatNumber(searchParams.get("minCc") || ""),
+            maxCc: formatNumber(searchParams.get("maxCc") || ""),
             color: searchParams.get("color") || "",
             condition: searchParams.get("condition") || "",
             exchange: searchParams.get("exchange") || "",
@@ -223,14 +238,14 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
             city: searchParams.get("city") || "",
             district: searchParams.get("district") || "",
             neighborhood: searchParams.get("neighborhood") || "",
-            minSqm: searchParams.get("minSqm") || "",
-            maxSqm: searchParams.get("maxSqm") || "",
-            minSqmGross: searchParams.get("minSqmGross") || "",
-            maxSqmGross: searchParams.get("maxSqmGross") || "",
+            minSqm: formatNumber(searchParams.get("minSqm") || ""),
+            maxSqm: formatNumber(searchParams.get("maxSqm") || ""),
+            minSqmGross: formatNumber(searchParams.get("minSqmGross") || ""),
+            maxSqmGross: formatNumber(searchParams.get("maxSqmGross") || ""),
             rooms: searchParams.get("rooms") || "",
-            minFloor: searchParams.get("minFloor") || "",
-            maxFloor: searchParams.get("maxFloor") || "",
-            totalFloors: searchParams.get("totalFloors") || "",
+            minFloor: formatNumber(searchParams.get("minFloor") || ""),
+            maxFloor: formatNumber(searchParams.get("maxFloor") || ""),
+            totalFloors: formatNumber(searchParams.get("totalFloors") || ""),
             buildingAge: searchParams.get("buildingAge") || "",
             heatingType: searchParams.get("heatingType") || "",
             furnished: searchParams.get("furnished") || "",
@@ -238,11 +253,11 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
             hasBalcony: searchParams.get("hasBalcony") || "",
             hasElevator: searchParams.get("hasElevator") || "",
             hasParking: searchParams.get("hasParking") || "",
-            monthlyDues: searchParams.get("monthlyDues") || "",
+            monthlyDues: formatNumber(searchParams.get("monthlyDues") || ""),
             creditSuitable: searchParams.get("creditSuitable") || "",
             usageStatus: searchParams.get("usageStatus") || "",
             bathroomCount: searchParams.get("bathroomCount") || "",
-            kitchenCount: searchParams.get("kitchenCount") || "",
+            kitchenCount: formatNumber(searchParams.get("kitchenCount") || ""),
             kitchenType: searchParams.get("kitchenType") || "",
             inComplex: searchParams.get("inComplex") || "",
             sellerType: searchParams.get("sellerType") || "",
@@ -476,7 +491,17 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                     params.delete(key);
                 }
             } else if (value) {
-                params.set(key, value as string);
+                // Parse numbers before sending to URL
+                if ([
+                    'minPrice', 'maxPrice', 'minYear', 'maxYear', 'minKm', 'maxKm',
+                    'minHp', 'maxHp', 'minCc', 'maxCc',
+                    'minSqm', 'maxSqm', 'minSqmGross', 'maxSqmGross',
+                    'minFloor', 'maxFloor', 'totalFloors', 'monthlyDues', 'kitchenCount'
+                ].includes(key)) {
+                    params.set(key, parseNumber(value as string));
+                } else {
+                    params.set(key, value as string);
+                }
             } else {
                 params.delete(key);
             }
@@ -780,18 +805,18 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                                     <label className="text-xs font-medium text-muted-foreground">Fiyat (TL)</label>
                                     <div className="flex items-center gap-2">
                                         <Input
-                                            type="number"
+                                            type="text"
                                             placeholder="Min"
                                             value={filters.minPrice}
-                                            onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                                            onChange={(e) => setFilters({ ...filters, minPrice: formatNumber(e.target.value) })}
                                             className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                         />
                                         <span className="text-muted-foreground text-xs">-</span>
                                         <Input
-                                            type="number"
+                                            type="text"
                                             placeholder="Max"
                                             value={filters.maxPrice}
-                                            onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                                            onChange={(e) => setFilters({ ...filters, maxPrice: formatNumber(e.target.value) })}
                                             className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                         />
                                     </div>
@@ -805,18 +830,18 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                                             <label className="text-xs font-medium text-muted-foreground">m² (Net)</label>
                                             <div className="flex items-center gap-2">
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Min"
                                                     value={filters.minSqm}
-                                                    onChange={(e) => setFilters({ ...filters, minSqm: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, minSqm: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                                 <span className="text-muted-foreground text-xs">-</span>
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Max"
                                                     value={filters.maxSqm}
-                                                    onChange={(e) => setFilters({ ...filters, maxSqm: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, maxSqm: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                             </div>
@@ -827,18 +852,18 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                                             <label className="text-xs font-medium text-muted-foreground">m² (Brüt)</label>
                                             <div className="flex items-center gap-2">
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Min"
                                                     value={filters.minSqmGross}
-                                                    onChange={(e) => setFilters({ ...filters, minSqmGross: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, minSqmGross: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                                 <span className="text-muted-foreground text-xs">-</span>
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Max"
                                                     value={filters.maxSqmGross}
-                                                    onChange={(e) => setFilters({ ...filters, maxSqmGross: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, maxSqmGross: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                             </div>
@@ -876,18 +901,18 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                                             <label className="text-xs font-medium text-muted-foreground">Yıl</label>
                                             <div className="flex items-center gap-2">
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Min"
                                                     value={filters.minYear}
-                                                    onChange={(e) => setFilters({ ...filters, minYear: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, minYear: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                                 <span className="text-muted-foreground text-xs">-</span>
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Max"
                                                     value={filters.maxYear}
-                                                    onChange={(e) => setFilters({ ...filters, maxYear: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, maxYear: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                             </div>
@@ -898,18 +923,18 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                                             <label className="text-xs font-medium text-muted-foreground">Kilometre</label>
                                             <div className="flex items-center gap-2">
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Min"
                                                     value={filters.minKm}
-                                                    onChange={(e) => setFilters({ ...filters, minKm: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, minKm: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                                 <span className="text-muted-foreground text-xs">-</span>
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Max"
                                                     value={filters.maxKm}
-                                                    onChange={(e) => setFilters({ ...filters, maxKm: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, maxKm: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                             </div>
@@ -940,18 +965,18 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                                             <label className="text-xs font-medium text-muted-foreground">Bulunduğu Kat</label>
                                             <div className="flex items-center gap-2">
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Min"
                                                     value={filters.minFloor}
-                                                    onChange={(e) => setFilters({ ...filters, minFloor: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, minFloor: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                                 <span className="text-muted-foreground text-xs">-</span>
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Max"
                                                     value={filters.maxFloor}
-                                                    onChange={(e) => setFilters({ ...filters, maxFloor: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, maxFloor: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                             </div>
@@ -961,10 +986,10 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                                         <div className="space-y-2">
                                             <label className="text-xs font-medium text-muted-foreground">Kat Sayısı</label>
                                             <Input
-                                                type="number"
+                                                type="text"
                                                 placeholder="Kat Sayısı"
                                                 value={filters.totalFloors}
-                                                onChange={(e) => setFilters({ ...filters, totalFloors: e.target.value })}
+                                                onChange={(e) => setFilters({ ...filters, totalFloors: formatNumber(e.target.value) })}
                                                 className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                             />
                                         </div>
@@ -1027,10 +1052,10 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                                             <div className="space-y-2">
                                                 <label className="text-xs font-medium text-muted-foreground">Mutfak</label>
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Sayısı"
                                                     value={filters.kitchenCount}
-                                                    onChange={(e) => setFilters({ ...filters, kitchenCount: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, kitchenCount: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                             </div>
@@ -1296,18 +1321,18 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                                             <label className="text-xs font-medium text-muted-foreground">Motor Gücü (HP)</label>
                                             <div className="flex items-center gap-2">
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Min"
                                                     value={filters.minHp}
-                                                    onChange={(e) => setFilters({ ...filters, minHp: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, minHp: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                                 <span className="text-muted-foreground text-xs">-</span>
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Max"
                                                     value={filters.maxHp}
-                                                    onChange={(e) => setFilters({ ...filters, maxHp: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, maxHp: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                             </div>
@@ -1318,18 +1343,18 @@ export function FilterSidebar({ categories = [], currentCategory, ancestors = []
                                             <label className="text-xs font-medium text-muted-foreground">Motor Hacmi (cc)</label>
                                             <div className="flex items-center gap-2">
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Min"
                                                     value={filters.minCc}
-                                                    onChange={(e) => setFilters({ ...filters, minCc: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, minCc: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                                 <span className="text-muted-foreground text-xs">-</span>
                                                 <Input
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Max"
                                                     value={filters.maxCc}
-                                                    onChange={(e) => setFilters({ ...filters, maxCc: e.target.value })}
+                                                    onChange={(e) => setFilters({ ...filters, maxCc: formatNumber(e.target.value) })}
                                                     className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors text-xs h-9"
                                                 />
                                             </div>

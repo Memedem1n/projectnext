@@ -158,16 +158,41 @@ model Listing {
   gear            String?
   caseType        String?
   version         String?
+  series          String?
   package         String?
+  motorPower      Int?      // HP
+  engineVolume    Int?      // cc
+  traction        String?   // "Önden Çekiş", "Arkadan İtiş", "4WD"
   
   // Status
   warranty        Boolean   @default(false)
   exchange        Boolean   @default(false)
   tramer          String?
+  plate           String?
+  plateNationality String?
   
   // Location
   city            String?
   district        String?
+  neighborhood    String? // Added neighborhood
+
+  // Real Estate Specifics
+  sqmNet          Int?
+  sqmGross        Int?
+  rooms           String?   // "1+1", "3+1", etc.
+  floor           Int?      // Bulunduğu kat
+  totalFloors     Int?      // Kat sayısı
+  buildingAge     String?   // "0", "1-5", etc.
+  heating         String?   // "Kombi", "Merkezi"
+  bathrooms       Int?
+  balcony         Boolean?
+  furnished       Boolean?
+  usingStatus     String?   // "Boş", "Kiracılı"
+  dues            Int?      // Aidat
+  creditSuitable  Boolean?
+  titleStatus     String?   // "Kat Mülkiyetli"
+  front           String?   // "Kuzey", "Güney"
+  material        String?   // "Betonarme"
   
   // Metadata
   views           Int       @default(0)
@@ -179,6 +204,8 @@ model Listing {
   rejectionReason   String?
   approvedAt        DateTime?
   approvedBy        String?
+  publishedAt       DateTime?  // When it was last published
+  expiresAt         DateTime?  // When the listing expires
   deletedAt         DateTime?  // For soft delete
   
   // New Fields
@@ -191,6 +218,7 @@ model Listing {
   dopingType        String?    // "VISUAL", "SEARCH", "FULL"
   dopingStartDate   DateTime?
   dopingEndDate     DateTime?
+  badges            String[]   @default([]) // "URGENT", "PRICE_DROPPED", "OPPORTUNITY"
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt()
@@ -385,4 +413,12 @@ model Message {
   createdAt      DateTime     @default(now())
   
   @@map("messages")
+}
+// Listing Deletion Feedback
+model ListingFeedback {
+  id        String   @id @default(cuid())
+  reason    String   // SOLD, REMOVED, FEES_HIGH, OTHER
+  details   String?
+  listingId String?  // Optional reference
+  createdAt DateTime @default(now())
 }

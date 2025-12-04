@@ -63,7 +63,7 @@ export function SimilarListings({ categoryId, currentListingId }: SimilarListing
                         {/* Image */}
                         <div className="relative aspect-[4/3] overflow-hidden">
                             <Image
-                                src={listing.images[0]?.url || "/placeholder.png"}
+                                src={listing.images[0]?.url || "/placeholder.svg"}
                                 alt={listing.title}
                                 fill
                                 className="object-cover transition-transform duration-500 group-hover:scale-110"

@@ -17,7 +17,7 @@ export function RecentListings({ listings = [] }: RecentListingsProps) {
                 <div className="flex overflow-x-auto pb-8 -mx-4 px-4 md:mx-0 md:px-0 gap-4 md:gap-6 scrollbar-hide snap-x snap-mandatory">
                     {listings.map((listing) => (
                         <div key={listing.id} className="w-[280px] flex-shrink-0 snap-start">
-                            <ListingCard listing={listing} />
+                            <ListingCard listing={listing} hideDoping={true} />
                         </div>
                     ))}
                 </div>

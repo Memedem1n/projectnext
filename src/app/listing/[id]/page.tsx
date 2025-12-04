@@ -63,49 +63,65 @@ export default async function ListingDetailPage({ params }: PageProps) {
                     listingId={listing.id}
                 />
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Left Column: Main Content (8 cols) */}
-                    <div className="lg:col-span-8 space-y-8">
-                        {/* Gallery */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Left Column: Gallery (6 cols) */}
+                    <div className="lg:col-span-6 space-y-8">
                         <ListingGallery images={listing.images} title={listing.title} />
 
-                        {/* Specs & Attributes */}
-                        <ListingSpecs listing={listing} />
-
-                        {/* Vehicle Specific Sections */}
-                        {listing.category?.slug?.startsWith('vasita') && (
-                            <>
-                                <DamageReportsSection
-                                    damageReports={listing.damage || []}
-                                    tramer={listing.tramer}
-                                />
-                                <EquipmentSection equipment={listing.equipment || []} />
-                            </>
-                        )}
-
-                        {/* Description */}
-                        <div className="glass-card p-8">
-                            <h2 className="text-xl font-semibold mb-6 pb-4 border-b border-white/10">Açıklama</h2>
-                            <div className="whitespace-pre-wrap text-muted-foreground leading-relaxed text-sm md:text-base">
-                                {listing.description || "Açıklama bulunmamaktadır."}
+                        {/* Description & Other Details (Below Gallery on mobile, but here for flow) */}
+                        <div className="space-y-8">
+                            {/* Description */}
+                            <div className="glass-card p-8">
+                                <h2 className="text-xl font-semibold mb-6 pb-4 border-b border-white/10">Açıklama</h2>
+                                <div className="whitespace-pre-wrap text-muted-foreground leading-relaxed text-sm md:text-base">
+                                    {listing.description || "Açıklama bulunmamaktadır."}
+                                </div>
                             </div>
+
+                            {/* Vehicle Specific Sections */}
+                            {(listing.category?.slug?.startsWith('vasita') || listing.brand || listing.model) && (
+                                <>
+                                    <DamageReportsSection
+                                        damageReports={listing.damage || []}
+                                        tramer={listing.tramer}
+                                        plate={listing.plate}
+                                        plateNationality={listing.plateNationality}
+                                    />
+                                </>
+                            )}
                         </div>
                     </div>
 
-                    {/* Right Column: Sidebar (4 cols) */}
-                    <div className="lg:col-span-4 space-y-6">
+                    {/* Right Column Wrapper (6 cols) */}
+                    <div className="lg:col-span-6 space-y-6">
                         {/* Sticky Wrapper */}
                         <div className="sticky top-24 space-y-6">
-                            <PriceCard listing={listing} />
+                            {/* Top Row: Specs & Sidebar Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Specs */}
+                                <div>
+                                    <ListingSpecs listing={listing} />
+                                </div>
 
-                            <SellerCard
-                                user={listing.user}
-                                listingId={listing.id}
-                                currentUser={session?.user ? { id: session.user.id } : null}
-                                contactPreference={listing.contactPreference}
-                            />
+                                {/* Sidebar Cards */}
+                                <div className="space-y-6">
+                                    <PriceCard listing={listing} />
 
-                            <SafetyTips />
+                                    <SellerCard
+                                        user={listing.user}
+                                        listingId={listing.id}
+                                        currentUser={session?.user ? { id: session.user.id } : null}
+                                        contactPreference={listing.contactPreference}
+                                    />
+
+                                    <SafetyTips />
+                                </div>
+                            </div>
+
+                            {/* Equipment Section (Full Width) */}
+                            {(listing.category?.slug?.startsWith('vasita') || listing.brand || listing.model) && (
+                                <EquipmentSection equipment={listing.equipment || []} />
+                            )}
                         </div>
                     </div>
                 </div>

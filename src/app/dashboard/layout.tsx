@@ -24,7 +24,7 @@ export default async function DashboardLayout({
         { icon: Bookmark, label: "Kaydedilen Aramalar", href: "/dashboard/saved-searches" },
         { icon: MessageCircle, label: "Mesajlarım", href: "/dashboard/messages" },
         { icon: BadgeCheck, label: "Doğrulama Merkezi", href: "/dashboard/verification" },
-        { icon: Settings, label: "Ayarlar", href: "/dashboard/settings" },
+        { icon: Settings, label: "Ayarlar", href: "/profile" },
     ];
 
     return (

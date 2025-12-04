@@ -30,26 +30,25 @@ const DOPING_OPTIONS: DopingOption[] = [
     },
     {
         id: "VISUAL",
-        title: "Görsel Doping",
-        description: "İlanınız parlak gümüş çerçeve ile dikkat çeker.",
+        title: "Gold Paket",
+        description: "Sarı çerçeve ve kalın başlık ile dikkat çekin.",
         price: 150,
         features: [
-            "Parlak Gümüş Çerçeve",
-            "Kalın Başlık",
+            "Sarı Çerçeve",
+            "Kalın Sarı Başlık",
             "Listelemede Dikkat Çeker",
             "Daha Fazla Tıklanma"
         ],
-        icon: Eye,
-        recommended: true
+        icon: Eye
     },
     {
         id: "SEARCH",
-        title: "Öne Çıkarma",
-        description: "Arama sonuçlarında ve önerilerde en üstte çıkın.",
+        title: "Vitrin Paketi",
+        description: "Arama sonuçlarında ve önerilerde üstte çıkın.",
         price: 250,
         features: [
-            "Arama Önerilerinde En Üstte",
-            "Kategori Sayfasında Sabitleme",
+            "Arama Önerilerinde Üstte",
+            "Kategori Sayfasında Öncelik",
             "Vitrin Gösterimi",
             "2x Daha Fazla Görüntülenme"
         ],
@@ -57,16 +56,17 @@ const DOPING_OPTIONS: DopingOption[] = [
     },
     {
         id: "FULL",
-        title: "Full Paket",
-        description: "Hem görsel fark yaratın hem de en üstte olun.",
+        title: "Premium Paket",
+        description: "Kayan parlama efekti ve en üst sıra garantisi.",
         price: 350,
         features: [
-            "Görsel Doping (Gümüş Çerçeve)",
-            "Arama Önerilerinde En Üstte",
-            "Kategori Sabitleme",
+            "Kayan Parlama Efekti (Özel)",
+            "Sarı Çerçeve & Kalın Başlık",
+            "En Üst Sırada Sabitleme",
             "Maksimum Görüntülenme"
         ],
-        icon: Zap
+        icon: Zap,
+        recommended: true
     }
 ];
 

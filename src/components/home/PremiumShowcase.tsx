@@ -20,7 +20,7 @@ export function PremiumShowcase() {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-4 md:px-0">
                     {listings.map((listing) => (
-                        <ListingCard key={listing.id} listing={listing} />
+                        <ListingCard key={listing.id} listing={listing} hideDoping={true} />
                     ))}
                 </div>
             </div>

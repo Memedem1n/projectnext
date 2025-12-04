@@ -18,7 +18,7 @@ import { getListings } from "@/lib/actions/listings";
 import { MOCK_LISTINGS, type Listing } from "@/data/mock-data";
 
 // Static generation for instant loading
-export const revalidate = 43200; // Revalidate every 12 hours
+export const revalidate = 0; // Disable cache for debugging
 
 // Singleton number formatter for better performance
 const priceFormatter = new Intl.NumberFormat('tr-TR', {
@@ -49,7 +49,11 @@ export default async function Home() {
       isVerified: false
     },
     tags: [],
-    description: l.description
+    description: l.description,
+    isDoping: l.isDoping,
+    isPremium: l.isPremium,
+    listingPackage: l.listingPackage,
+    dopingType: l.dopingType
   }));
 
   // Generate mock category stats (can be updated to real stats later)

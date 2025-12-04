@@ -62,6 +62,28 @@ export async function getListings(params?: {
     damageStatus?: 'hasarsiz' | 'degisen' | 'boyali'
     city?: string
     district?: string
+    neighborhood?: string
+    // Emlak Filters
+    minSqm?: number
+    maxSqm?: number
+    minSqmGross?: number
+    maxSqmGross?: number
+    rooms?: string
+    minFloor?: number
+    maxFloor?: number
+    totalFloors?: number
+    buildingAge?: string
+    heatingType?: string
+    bathroomCount?: number
+    furnished?: string // "true" | "false"
+    hasBalcony?: string // "true" | "false"
+    hasElevator?: string
+    hasParking?: string
+    creditSuitable?: string
+    usageStatus?: string
+    deedStatus?: string
+    sellerType?: string
+    listingDate?: string
 }) {
     try {
         const {
@@ -94,7 +116,25 @@ export async function getListings(params?: {
             tramerRecord,
             sortBy = 'createdAt',
             sortOrder = 'desc',
-            damageStatus
+            damageStatus,
+            // Emlak
+            minSqm, maxSqm,
+            minSqmGross, maxSqmGross,
+            rooms,
+            minFloor, maxFloor,
+            totalFloors,
+            buildingAge,
+            heatingType,
+            bathroomCount,
+            furnished,
+            hasBalcony,
+            hasElevator,
+            hasParking,
+            creditSuitable,
+            usageStatus,
+            deedStatus,
+            sellerType,
+            listingDate
         } = params || {}
 
         // If categoryId is provided, get all descendant category IDs for recursive filtering
@@ -107,6 +147,47 @@ export async function getListings(params?: {
                 categoryIds = [categoryId];
             }
         }
+
+        // Calculate date for listingDate filter
+        let dateFilter: Date | undefined;
+        if (listingDate) {
+            const days = parseInt(listingDate);
+            if (!isNaN(days)) {
+                dateFilter = new Date();
+                dateFilter.setDate(dateFilter.getDate() - days);
+            }
+        }
+
+        // Parse numeric filters
+        const parseNum = (val: any) => {
+            if (typeof val === 'number') return val;
+            if (typeof val === 'string' && val.trim() !== '') {
+                const parsed = parseInt(val.replace(/\./g, '')); // Handle dots if any
+                return isNaN(parsed) ? undefined : parsed;
+            }
+            return undefined;
+        };
+
+        const _minPrice = parseNum(minPrice);
+        const _maxPrice = parseNum(maxPrice);
+        const _minYear = parseNum(minYear);
+        const _maxYear = parseNum(maxYear);
+        const _minKm = parseNum(minKm);
+        const _maxKm = parseNum(maxKm);
+        const _minHp = parseNum(minHp);
+        const _maxHp = parseNum(maxHp);
+        const _minCc = parseNum(minCc);
+        const _maxCc = parseNum(maxCc);
+
+        // Emlak Numeric Filters
+        const _minSqm = parseNum(minSqm);
+        const _maxSqm = parseNum(maxSqm);
+        const _minSqmGross = parseNum(minSqmGross);
+        const _maxSqmGross = parseNum(maxSqmGross);
+        const _minFloor = parseNum(minFloor);
+        const _maxFloor = parseNum(maxFloor);
+        const _totalFloors = parseNum(totalFloors);
+        const _bathroomCount = parseNum(bathroomCount);
 
         const where: Prisma.ListingWhereInput = {
             status: 'ACTIVE',
@@ -121,12 +202,12 @@ export async function getListings(params?: {
                 ]
             }),
             // Price & Basic Filters
-            ...(minPrice !== undefined && { price: { gte: minPrice } }),
-            ...(maxPrice !== undefined && { price: { lte: maxPrice } }),
-            ...(minYear !== undefined && { year: { gte: minYear } }),
-            ...(maxYear !== undefined && { year: { lte: maxYear } }),
-            ...(minKm !== undefined && { km: { gte: minKm } }),
-            ...(maxKm !== undefined && { km: { lte: maxKm } }),
+            ...(_minPrice !== undefined && { price: { gte: _minPrice } }),
+            ...(_maxPrice !== undefined && { price: { lte: _maxPrice } }),
+            ...(_minYear !== undefined && { year: { gte: _minYear } }),
+            ...(_maxYear !== undefined && { year: { lte: _maxYear } }),
+            ...(_minKm !== undefined && { km: { gte: _minKm } }),
+            ...(_maxKm !== undefined && { km: { lte: _maxKm } }),
 
             // Brand & Model
             ...(brand && { brand: { equals: brand, mode: 'insensitive' } }),
@@ -136,6 +217,13 @@ export async function getListings(params?: {
             ...((fuel || fuelType) && { fuel: { equals: fuel || fuelType, mode: 'insensitive' } }),
             ...((gear || transmission) && { gear: { equals: gear || transmission, mode: 'insensitive' } }),
             ...((caseType || bodyType) && { caseType: { equals: caseType || bodyType, mode: 'insensitive' } }),
+
+            // Vehicle Specs
+            ...(_minHp !== undefined && { motorPower: { gte: _minHp } }),
+            ...(_maxHp !== undefined && { motorPower: { lte: _maxHp } }),
+            ...(_minCc !== undefined && { engineVolume: { gte: _minCc } }),
+            ...(_maxCc !== undefined && { engineVolume: { lte: _maxCc } }),
+            ...(driveType && { traction: { equals: driveType, mode: 'insensitive' } }),
 
             // Color
             ...(color && { color: { equals: color, mode: 'insensitive' } }),
@@ -173,6 +261,49 @@ export async function getListings(params?: {
             // Location Filters
             ...(params?.city && { city: { equals: params.city, mode: 'insensitive' } }),
             ...(params?.district && { district: { equals: params.district, mode: 'insensitive' } }),
+            ...(params?.neighborhood && { neighborhood: { equals: params.neighborhood, mode: 'insensitive' } }),
+
+            // Emlak Filters
+            ...(minSqm !== undefined && { sqmNet: { gte: minSqm } }),
+            ...(maxSqm !== undefined && { sqmNet: { lte: maxSqm } }),
+            ...(minSqmGross !== undefined && { sqmGross: { gte: minSqmGross } }),
+            ...(maxSqmGross !== undefined && { sqmGross: { lte: maxSqmGross } }),
+            ...(rooms && { rooms: { equals: rooms } }),
+            ...(minFloor !== undefined && { floor: { gte: minFloor } }),
+            ...(maxFloor !== undefined && { floor: { lte: maxFloor } }),
+            ...(totalFloors !== undefined && { totalFloors: { equals: totalFloors } }),
+            ...(buildingAge && { buildingAge: { equals: buildingAge } }),
+            ...(heatingType && { heating: { equals: heatingType } }),
+            ...(bathroomCount !== undefined && { bathrooms: { gte: bathroomCount } }),
+            ...(furnished === 'true' && { furnished: true }),
+            ...(creditSuitable === 'true' && { creditSuitable: true }),
+            ...(usageStatus && { usingStatus: { equals: usageStatus } }),
+            ...(deedStatus && { titleStatus: { equals: deedStatus } }),
+
+            // Boolean Features (Equipment or Column)
+            ...(hasBalcony === 'true' && { balcony: true }),
+            // For others like Elevator, Parking, we use Equipment relation
+            ...((hasElevator === 'true' || hasParking === 'true') && {
+                equipment: {
+                    some: {
+                        equipment: {
+                            name: {
+                                in: [
+                                    ...(hasElevator === 'true' ? ['Asansör'] : []),
+                                    ...(hasParking === 'true' ? ['Otopark', 'Kapalı Otopark'] : [])
+                                ]
+                            }
+                        }
+                    }
+                }
+            }),
+
+            // Seller Type
+            ...(sellerType === 'Sahibinden' && { user: { role: 'INDIVIDUAL' } }),
+            ...(sellerType === 'Emlak Ofisinden' && { user: { role: 'DEALER' } }),
+
+            // Listing Date
+            ...(dateFilter && { createdAt: { gte: dateFilter } }),
         }
 
         // Direct Prisma call instead of cached
@@ -207,6 +338,9 @@ export async function getListings(params?: {
         }
     }
 }
+
+// ... (getCachedSubcategoryListings remains same)
+
 
 // Cached listing query for subcategories (e.g., Vasıta > Otomobil)
 // Revalidates every 24 hours for performance
@@ -250,7 +384,7 @@ const getCachedSubcategoryListings = unstable_cache(
 
         return { listings, totalCount };
     },
-    ['subcategory-listings'],
+    ['subcategory-listings-v2'],
     { revalidate: 86400, tags: ['listings'] }
 );
 
@@ -336,8 +470,8 @@ export async function getListingById(id: string) {
             motorPower: eurotaxData?.["Motor Gücü"] || null,
             engineVolume: eurotaxData?.["Motor Hacmi"] || null,
             traction: eurotaxData?.["Alt Model"]?.includes("Quattro") || eurotaxData?.["Alt Model"]?.includes("4Matic") || eurotaxData?.["Alt Model"]?.includes("xDrive") ? "4x4" : "Önden Çekiş", // Simple inference
-            series: eurotaxData?.path_4 || null,
-            version: eurotaxData?.path_9 || null,
+            series: eurotaxData?.path_8 || null,
+            version: eurotaxData?.["Alt Model"] || null,
             eurotaxId: eurotaxData?.full_path || null
         };
 
@@ -422,8 +556,13 @@ export async function createListing(data: any) {
                 price: parseInt(data.price.toString().replace(/\./g, "")),
                 categoryId: data.categoryId,
                 userId: userId,
-                status: 'PENDING', // Default status
-                isActive: false,   // Default active state
+                status: 'PENDING', // Require approval
+                isActive: false,   // Not active until approved
+                publishedAt: null, // Will be set on approval
+                expiresAt: (() => {
+                    const days = data.listingPackage === 'premium' ? 90 : data.listingPackage === 'gold' ? 60 : 30;
+                    return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+                })(),
 
                 // New Fields
                 expertReports: (() => {
@@ -434,6 +573,8 @@ export async function createListing(data: any) {
                     return reports;
                 })(),
                 contactPreference: data.contactPreference || "both",
+                listingPackage: data.listingPackage || "standard",
+                isPremium: data.listingPackage === "premium", // Only Premium package gets isPremium flag for showcase
 
                 // Vehicle Details
                 brand: data.brand,
@@ -446,15 +587,39 @@ export async function createListing(data: any) {
                 caseType: data.caseType,
                 version: data.version,
                 package: data.package,
+                motorPower: data.motorPower ? parseInt(data.motorPower) : null,
+                engineVolume: data.engineVolume ? parseInt(data.engineVolume) : null,
+                traction: data.traction,
 
                 // Status
                 warranty: data.warranty || false,
                 exchange: data.exchange || false,
                 tramer: data.tramer,
+                plate: data.plate,
+                plateNationality: data.plateNationality,
 
                 // Location
                 city: data.city,
                 district: data.district,
+                neighborhood: data.neighborhood,
+
+                // Real Estate Specifics
+                sqmNet: data.sqmNet ? parseInt(data.sqmNet) : null,
+                sqmGross: data.sqmGross ? parseInt(data.sqmGross) : null,
+                rooms: data.rooms,
+                floor: data.floor ? parseInt(data.floor) : null,
+                totalFloors: data.totalFloors ? parseInt(data.totalFloors) : null,
+                buildingAge: data.buildingAge,
+                heating: data.heating,
+                bathrooms: data.bathrooms ? parseInt(data.bathrooms) : null,
+                balcony: data.balcony || false,
+                furnished: data.furnished || false,
+                usingStatus: data.usingStatus,
+                dues: data.dues ? parseInt(data.dues) : null,
+                creditSuitable: data.creditSuitable || false,
+                titleStatus: data.titleStatus,
+                front: data.front,
+                material: data.material,
 
                 // Relations
                 images: {
@@ -483,11 +648,20 @@ export async function createListing(data: any) {
                     })) || []
                 },
 
-                // Doping Fields
-                isDoping: data.doping && data.doping !== "NONE",
-                dopingType: data.doping !== "NONE" ? data.doping : null,
-                dopingStartDate: data.doping !== "NONE" ? new Date() : null,
-                dopingEndDate: data.doping !== "NONE" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null, // 30 days default
+                // Doping Fields - Derived from Package
+                isDoping: data.listingPackage === 'gold' || data.listingPackage === 'premium' || (data.doping && data.doping !== "NONE"),
+                dopingType: (() => {
+                    if (data.listingPackage === 'premium') return 'FULL';
+                    if (data.listingPackage === 'gold') return 'VISUAL';
+                    return data.doping !== "NONE" ? data.doping : null;
+                })(),
+                dopingStartDate: (data.listingPackage !== 'standard' || (data.doping && data.doping !== "NONE")) ? new Date() : null,
+                dopingEndDate: (() => {
+                    const days = data.listingPackage === 'premium' ? 90 : data.listingPackage === 'gold' ? 60 : 30;
+                    return (data.listingPackage !== 'standard' || (data.doping && data.doping !== "NONE"))
+                        ? new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+                        : null;
+                })(),
             }
         })
 
@@ -662,68 +836,6 @@ export async function updateListing(id: string, data: any) {
 
 
 
-export async function deleteListing(id: string) {
-    try {
-        const cookieStore = await cookies()
-        const sessionCookie = cookieStore.get('session')
-
-        if (!sessionCookie) {
-            return {
-                success: false,
-                error: 'Unauthorized'
-            }
-        }
-
-        const session = await decrypt(sessionCookie.value)
-        const userId = session?.id as string
-
-        if (!userId) {
-            return {
-                success: false,
-                error: 'Unauthorized'
-            }
-        }
-
-        // Check if listing exists and belongs to user
-        const listing = await prisma.listing.findUnique({
-            where: { id },
-            select: { userId: true }
-        })
-
-        if (!listing) {
-            return {
-                success: false,
-                error: 'Listing not found'
-            }
-        }
-
-        // Allow admin or owner to delete
-        // For now, we only check ownership as we don't have role in session yet
-        if (listing.userId !== userId) {
-            return {
-                success: false,
-                error: 'Unauthorized'
-            }
-        }
-
-        await prisma.listing.delete({
-            where: { id }
-        })
-
-
-        revalidatePath('/category', 'page')
-
-        return {
-            success: true
-        }
-    } catch (error) {
-        console.error('Error deleting listing:', error)
-        return {
-            success: false,
-            error: 'Failed to delete listing'
-        }
-    }
-}
 
 export async function getHybridListings(params: any) {
     const { page = 1, limit = 20, ...rest } = params;
@@ -756,3 +868,189 @@ export async function getUserListingCount(userId: string) {
     }
 }
 
+
+export async function deleteListing(listingId: string, reason: string, details?: string) {
+    try {
+        const cookieStore = await cookies()
+        const sessionCookie = cookieStore.get('session')
+
+        if (!sessionCookie?.value) {
+            return {
+                success: false,
+                error: 'Unauthorized: No session cookie found'
+            }
+        }
+
+        const session = await decrypt(sessionCookie.value)
+
+        if (!session?.id) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        // Verify ownership
+        const listing = await prisma.listing.findUnique({
+            where: { id: listingId },
+            select: { userId: true }
+        })
+
+        if (!listing) {
+            return {
+                success: false,
+                error: 'Listing not found'
+            }
+        }
+
+        if (listing.userId !== session.id) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        // Record feedback
+        await prisma.listingFeedback.create({
+            data: {
+                reason,
+                details,
+                listingId
+            }
+        })
+
+        // Soft delete the listing
+        await prisma.listing.update({
+            where: { id: listingId },
+            data: {
+                status: 'DELETED',
+                isActive: false
+            }
+        })
+
+        revalidatePath('/dashboard/my-listings')
+        return {
+            success: true
+        }
+    } catch (error) {
+        console.error('Error deleting listing:', error)
+        return {
+            success: false,
+            error: 'Failed to delete listing'
+        }
+    }
+}
+
+export async function restoreListing(listingId: string, packageType: string = 'standard') {
+    try {
+        const cookieStore = await cookies()
+        const sessionCookie = cookieStore.get('session')
+
+        if (!sessionCookie?.value) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        const session = await decrypt(sessionCookie.value)
+        if (!session?.id) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        // Verify ownership
+        const listing = await prisma.listing.findUnique({
+            where: { id: listingId },
+            select: { userId: true }
+        })
+
+        if (!listing) {
+            return {
+                success: false,
+                error: 'Listing not found'
+            }
+        }
+
+        if (listing.userId !== session.id) {
+            return {
+                success: false,
+                error: 'Unauthorized'
+            }
+        }
+
+        // Calculate expiration based on package
+        let durationDays = 30;
+        if (packageType === 'gold') durationDays = 60;
+        if (packageType === 'premium') durationDays = 90;
+
+        // Restore listing to ACTIVE status with new package and expiration
+        await prisma.listing.update({
+            where: { id: listingId },
+            data: {
+                status: 'ACTIVE',
+                isActive: true,
+                listingPackage: packageType,
+                publishedAt: new Date(),
+                expiresAt: new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000)
+            }
+        })
+
+        revalidatePath('/dashboard/my-listings')
+        return {
+            success: true
+        }
+    } catch (error) {
+        console.error('Error restoring listing:', error)
+        return {
+            success: false,
+            error: 'Failed to restore listing'
+        }
+    }
+}
+
+export async function addListingBadge(listingId: string, badge: string) {
+    try {
+        const cookieStore = await cookies()
+        const sessionCookie = cookieStore.get('session')
+
+        if (!sessionCookie?.value) {
+            return { success: false, error: 'Unauthorized' }
+        }
+
+        const session = await decrypt(sessionCookie.value)
+        if (!session?.id) {
+            return { success: false, error: 'Unauthorized' }
+        }
+
+        const listing = await prisma.listing.findUnique({
+            where: { id: listingId },
+            select: { userId: true, badges: true }
+        })
+
+        if (!listing) return { success: false, error: 'Listing not found' }
+        if (listing.userId !== session.id) return { success: false, error: 'Unauthorized' }
+
+        // If badge already exists, don't add it again
+        if (listing.badges.includes(badge)) {
+            return { success: true }
+        }
+
+        await prisma.listing.update({
+            where: { id: listingId },
+            data: {
+                badges: {
+                    push: badge
+                }
+            }
+        })
+
+        revalidatePath('/dashboard/my-listings')
+        return { success: true }
+    } catch (error) {
+        console.error('Error adding badge:', error)
+        return { success: false, error: 'Failed to add badge' }
+    }
+}
