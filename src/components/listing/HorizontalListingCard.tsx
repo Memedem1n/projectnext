@@ -153,6 +153,11 @@ export function HorizontalListingCard({ listing, className }: HorizontalListingC
                                         {cc} cc
                                     </div>
                                 )}
+                                {listing.caseType && (
+                                    <div className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-md text-muted-foreground flex items-center gap-1">
+                                        <span>{listing.caseType}</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Feature Badges - Premium style */}

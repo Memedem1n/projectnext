@@ -73,7 +73,7 @@ export function VehicleDamageZoneSelector({ value, onChange }: VehicleDamageZone
         if (!activeMenuZone) return;
 
         const newMap = { ...value };
-        if (status === 'original') {
+        if (status === 'any') {
             delete newMap[activeMenuZone];
         } else {
             newMap[activeMenuZone] = status;
@@ -89,7 +89,7 @@ export function VehicleDamageZoneSelector({ value, onChange }: VehicleDamageZone
     };
 
     const handleBulkAction = (status: DamageStatus) => {
-        if (status === 'original') {
+        if (status === 'any') {
             onChange({});
         } else {
             const newMap: DamageZoneMap = {};
@@ -102,14 +102,17 @@ export function VehicleDamageZoneSelector({ value, onChange }: VehicleDamageZone
     };
 
     const getZoneStyle = (zoneId: string) => {
-        const status = value[zoneId] || 'original';
+        const status = value[zoneId] || 'any';
         const isHovered = hoveredZone === zoneId;
         const isActive = activeMenuZone === zoneId;
 
-        let fill = '#22c55e'; // original (green)
-        let stroke = '#16a34a';
+        let fill = '#94a3b8'; // any (gray) - default
+        let stroke = '#64748b';
 
-        if (status === 'painted') {
+        if (status === 'original') {
+            fill = '#22c55e'; // green
+            stroke = '#16a34a';
+        } else if (status === 'painted') {
             fill = '#fb923c'; // orange
             stroke = '#f97316';
         } else if (status === 'local') {
@@ -118,9 +121,6 @@ export function VehicleDamageZoneSelector({ value, onChange }: VehicleDamageZone
         } else if (status === 'changed') {
             fill = '#ef4444'; // red
             stroke = '#dc2626';
-        } else if (status === 'any') {
-            fill = '#94a3b8'; // slate-400 (gray)
-            stroke = '#64748b';
         } else if (status === 'not_changed') {
             fill = '#3b82f6'; // blue-500
             stroke = '#2563eb';

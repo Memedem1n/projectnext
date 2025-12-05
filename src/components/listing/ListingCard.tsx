@@ -98,6 +98,11 @@ export function ListingCard({ listing, className, showCompare = true, compact = 
                         >
                             {listingTitle}
                         </h3>
+                        {listing.caseType && (
+                            <div className="mt-1 text-[10px] text-muted-foreground font-medium">
+                                {listing.caseType}
+                            </div>
+                        )}
                     </div>
                     <div className="mt-1.5 flex items-center justify-between">
                         <span className="font-semibold">
